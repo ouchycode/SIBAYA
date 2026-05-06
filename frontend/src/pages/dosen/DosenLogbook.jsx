@@ -31,13 +31,14 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useEntityList } from "@/lib/hooks/useEntityList";
-import { base44 } from "@/api/base44Client";
+import { sibaApi } from "@/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
 
 const ITEMS_PER_PAGE = 5;
@@ -62,17 +63,19 @@ export default function DosenLogbook() {
   // State untuk Filter & Pagination
   const [studentFilter, setStudentFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isValidatingId, setIsValidatingId] = useState(null);
 
-  // Data Mentah
-  const logs = logsAll.filter((l) => l.supervisor_email === user?.email);
-  const completedBookings = bookingsAll.filter(
-    (b) => b.supervisor_email === user?.email && b.status === "completed",
-  );
+  // Backend sudah scope data ke supervisor yg login — tidak perlu filter manual.
+  // Filter manual menyebabkan race condition jika user belum loaded saat data tiba.
+  const logs = logsAll;
+  const completedBookings = bookingsAll.filter((b) => b.status === "completed");
 
   // Data Sesi Belum Dicatat (Sesi Selesai yg belum ada logbook-nya)
-  const loggedBookingIds = new Set(logs.map((l) => l.booking_id));
+  // Konversi ke String untuk menghindari mismatch tipe (API bisa return string/number)
+  const loggedBookingIds = new Set(logs.map((l) => String(l.booking_id)));
   const unloggedBookings = completedBookings.filter(
-    (b) => !loggedBookingIds.has(b.id),
+    (b) => !loggedBookingIds.has(String(b.id)),
   );
 
   const uniqueStudents = Array.from(new Set(logs.map((l) => l.student_email)));
@@ -131,17 +134,16 @@ export default function DosenLogbook() {
   };
 
   const handleSave = async () => {
+    setIsSaving(true);
     try {
       if (editingLogId) {
-        // JIKA MODE EDIT (UPDATE)
-        await base44.entities.Logbook.update(editingLogId, {
+        await sibaApi.entities.Logbook.update(editingLogId, {
           ...form,
           progress_percentage: parseInt(form.progress_percentage) || 0,
         });
-        toast.success("Catatan bimbingan berhasil diperbarui");
+        toast.success("Catatan bimbingan berhasil diperbarui.");
       } else {
-        // JIKA MODE BARU (CREATE)
-        await base44.entities.Logbook.create({
+        await sibaApi.entities.Logbook.create({
           booking_id: selectedBooking.id,
           student_email: selectedBooking.student_email,
           supervisor_email: user?.email,
@@ -150,21 +152,30 @@ export default function DosenLogbook() {
           progress_percentage: parseInt(form.progress_percentage) || 0,
           validated_by_supervisor: true,
         });
-        toast.success("Catatan bimbingan berhasil disimpan");
+        toast.success("Catatan bimbingan berhasil disimpan.");
       }
       queryClient.invalidateQueries({ queryKey: ["Logbook"] });
       setShowDialog(false);
     } catch (error) {
-      toast.error("Gagal menyimpan catatan.");
+      toast.error(error.data?.message || error.message || "Gagal menyimpan catatan.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleValidate = async (logId) => {
-    await base44.entities.Logbook.update(logId, {
-      validated_by_supervisor: true,
-    });
-    queryClient.invalidateQueries({ queryKey: ["Logbook"] });
-    toast.success("Catatan divalidasi");
+    setIsValidatingId(logId);
+    try {
+      await sibaApi.entities.Logbook.update(logId, {
+        validated_by_supervisor: true,
+      });
+      queryClient.invalidateQueries({ queryKey: ["Logbook"] });
+      toast.success("Catatan berhasil divalidasi.");
+    } catch (error) {
+      toast.error(error.data?.message || error.message || "Gagal memvalidasi catatan.");
+    } finally {
+      setIsValidatingId(null);
+    }
   };
 
   return (
@@ -314,8 +325,12 @@ export default function DosenLogbook() {
                           variant="outline"
                           className="h-8 gap-1.5 rounded-sm font-bold border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground shadow-none"
                           onClick={() => handleValidate(log.id)}
+                          disabled={isValidatingId === log.id}
                         >
-                          <CheckCircle className="w-3.5 h-3.5" /> Validasi
+                          {isValidatingId === log.id
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            : <CheckCircle className="w-3.5 h-3.5" />}
+                          Validasi
                         </Button>
                       )}
                     </div>
@@ -527,8 +542,11 @@ export default function DosenLogbook() {
             <Button
               className="rounded-sm shadow-none font-bold"
               onClick={handleSave}
+              disabled={isSaving}
             >
-              {editingLogId ? "Simpan Perubahan" : "Simpan Catatan"}
+              {isSaving
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Menyimpan...</>
+                : editingLogId ? "Simpan Perubahan" : "Simpan Catatan"}
             </Button>
           </DialogFooter>
         </DialogContent>

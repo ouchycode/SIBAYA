@@ -24,12 +24,8 @@ export default function DosenDashboard() {
   const { data: mappingsAll = [] } = useEntityList("Mapping");
   const { data: bookingsAll = [] } = useEntityList("Booking");
 
-  const mappings = mappingsAll.filter(
-    (m) => m.supervisor_email === user?.email && m.status === "active",
-  );
-  const bookings = bookingsAll.filter(
-    (b) => b.supervisor_email === user?.email,
-  );
+  const mappings = mappingsAll.filter((m) => m.status === "active");
+  const bookings = bookingsAll;
 
   const pendingRequests = bookings.filter((b) => b.status === "pending");
   const todayBookings = bookings.filter(
@@ -62,12 +58,23 @@ export default function DosenDashboard() {
   return (
     <div className="space-y-6">
       {/* Header Halaman Formal */}
-      <div className="bg-card border border-border p-5 rounded-md shadow-sm">
-        <h1 className="text-2xl font-bold text-foreground">Dashboard Dosen</h1>
-        <p className="text-sm font-medium text-muted-foreground mt-1">
-          Selamat datang,{" "}
-          <span className="text-foreground">{user?.full_name || "Dosen"}</span>
-        </p>
+      <div className="bg-card border border-border p-5 rounded-md shadow-sm flex items-center gap-5">
+        <div className="hidden sm:flex w-16 h-16 rounded-full bg-accent text-accent-foreground items-center justify-center shrink-0 border-2 border-border overflow-hidden">
+          {user?.photo ? (
+            <img src={user.photo} alt="Avatar" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-2xl font-black">
+              {(user?.full_name || "D")[0].toUpperCase()}
+            </span>
+          )}
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Dashboard Dosen</h1>
+          <p className="text-sm font-medium text-muted-foreground mt-1">
+            Selamat datang,{" "}
+            <span className="text-foreground">{user?.full_name || "Dosen"}</span>
+          </p>
+        </div>
       </div>
 
       {/* Stats Grid - Memanfaatkan komponen StatsCard bawaan */}

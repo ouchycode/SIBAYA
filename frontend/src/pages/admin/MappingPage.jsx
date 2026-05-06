@@ -45,17 +45,22 @@ import {
   Search,
   Check,
   ChevronsUpDown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useEntityList } from "@/lib/hooks/useEntityList";
-import { base44 } from "@/api/base44Client";
+import { sibaApi } from "@/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function MappingPage() {
   const queryClient = useQueryClient();
   const { data: mappings = [] } = useEntityList("Mapping");
   const { data: users = [] } = useEntityList("User");
+
+  const ITEMS_PER_PAGE = 5;
+  const [currentPage, setCurrentPage] = useState(1);
 
   // State Utama
   const [showDialog, setShowDialog] = useState(false);
@@ -75,6 +80,8 @@ export default function MappingPage() {
 
   // State Hapus
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Filter Data User
   const students = users.filter(
@@ -96,7 +103,17 @@ export default function MappingPage() {
       });
   }, [mappings, searchMapping]);
 
+  // Handle ketika search berubah, kembalikan ke halaman 1
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchMapping]);
+
+  const totalPages = Math.ceil(filteredMappings.length / ITEMS_PER_PAGE) || 1;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const currentMappings = filteredMappings.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   const handleSave = async () => {
+    setIsSubmitting(true);
     const student = students.find((s) => s.email === form.student_email);
     const dosen = dosens.find((d) => d.email === form.supervisor_email);
 
@@ -113,28 +130,34 @@ export default function MappingPage() {
 
     try {
       if (editId) {
-        await base44.entities.Mapping.update(editId, payload);
+        await sibaApi.entities.Mapping.update(editId, payload);
         toast.success("Data mapping diperbarui");
       } else {
-        await base44.entities.Mapping.create(payload);
+        await sibaApi.entities.Mapping.create(payload);
         toast.success("Mapping berhasil ditambahkan");
       }
       queryClient.invalidateQueries({ queryKey: ["Mapping"] });
       setShowDialog(false);
     } catch (error) {
-      toast.error("Gagal menyimpan mapping.");
+      toast.error(error.data?.message || error.message || "Gagal menyimpan mapping.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    setIsDeleting(true);
     try {
-      await base44.entities.Mapping.update(deleteTarget.id, {
+      await sibaApi.entities.Mapping.update(deleteTarget.id, {
         status: "inactive",
       });
       queryClient.invalidateQueries({ queryKey: ["Mapping"] });
       toast.success("Mapping dinonaktifkan");
+    } catch (error) {
+      toast.error(error.data?.message || error.message || "Gagal menonaktifkan mapping.");
     } finally {
+      setIsDeleting(false);
       setDeleteTarget(null);
     }
   };
@@ -188,7 +211,7 @@ export default function MappingPage() {
         />
       ) : (
         <div className="space-y-3">
-          {filteredMappings.map((m) => (
+          {currentMappings.map((m) => (
             <Card
               key={m.id}
               className="rounded-md border border-border shadow-none bg-card hover:border-primary/40 transition-colors"
@@ -279,6 +302,38 @@ export default function MappingPage() {
               </CardContent>
             </Card>
           ))}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between bg-card border border-border p-3 rounded-md shadow-sm mt-4">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                Halaman {currentPage} dari {totalPages}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 rounded-sm shadow-none font-bold text-xs"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Sebelumnya
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 rounded-sm shadow-none font-bold text-xs"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                >
+                  Selanjutnya
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -424,9 +479,9 @@ export default function MappingPage() {
             <Button
               className="rounded-sm font-bold shadow-none"
               onClick={handleSave}
-              disabled={!form.student_email || !form.supervisor_email}
+              disabled={!form.student_email || !form.supervisor_email || isSubmitting}
             >
-              {editId ? "Simpan Perubahan" : "Simpan Mapping"}
+              {isSubmitting ? "Menyimpan..." : (editId ? "Simpan Perubahan" : "Simpan Mapping")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -456,9 +511,10 @@ export default function MappingPage() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
+              disabled={isDeleting}
               className="bg-destructive hover:bg-destructive/90 font-bold rounded-sm"
             >
-              Nonaktifkan
+              {isDeleting ? "Memproses..." : "Nonaktifkan"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

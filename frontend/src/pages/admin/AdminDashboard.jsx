@@ -19,8 +19,10 @@ import {
   CartesianGrid,
 } from "recharts";
 import { useEntityList } from "@/lib/hooks/useEntityList";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 
 export default function AdminDashboard() {
+  const { data: user } = useCurrentUser();
   const { data: users = [] } = useEntityList("User");
   const { data: mappings = [] } = useEntityList("Mapping");
   const { data: periods = [] } = useEntityList("Period");
@@ -41,14 +43,25 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       {/* Header Halaman Formal */}
       <div className="bg-card border border-border p-5 rounded-md shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6 text-primary" />
-            Dashboard Administrator
-          </h1>
-          <p className="text-sm font-medium text-muted-foreground mt-1">
-            Ringkasan data sivitas akademika dan aktivitas bimbingan.
-          </p>
+        <div className="flex items-center gap-5">
+          <div className="hidden sm:flex w-16 h-16 rounded-full bg-accent text-accent-foreground items-center justify-center shrink-0 border-2 border-border overflow-hidden">
+            {user?.photo ? (
+              <img src={user.photo} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-2xl font-black">
+                {(user?.full_name || "A")[0].toUpperCase()}
+              </span>
+            )}
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+              <ShieldCheck className="w-6 h-6 text-primary" />
+              Dashboard Administrator
+            </h1>
+            <p className="text-sm font-medium text-muted-foreground mt-1">
+              Selamat datang, <span className="text-foreground">{user?.full_name || "Admin"}</span>
+            </p>
+          </div>
         </div>
         <div className="bg-muted/50 border border-border px-3 py-2 rounded-sm text-right shrink-0">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">

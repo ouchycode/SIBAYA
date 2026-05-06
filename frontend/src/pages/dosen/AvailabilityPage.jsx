@@ -33,79 +33,77 @@ import { id as localeId } from "date-fns/locale";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useEntityList } from "@/lib/hooks/useEntityList";
-import { base44 } from "@/api/base44Client";
+import { sibaApi } from "@/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function AvailabilityPage() {
   const queryClient = useQueryClient();
   const { data: user } = useCurrentUser();
   const { data: allSlots = [] } = useEntityList("Slot");
-  const { data: allBookings = [] } = useEntityList("Booking");
 
-  const slots = allSlots.filter((s) => s.supervisor_email === user?.email);
+const slots = allSlots;
   const [showDialog, setShowDialog] = useState(false);
   const [form, setForm] = useState({
     date: "",
     start_time: "",
     end_time: "",
-    max_students: 1,
     mode: "offline",
     location: "",
   });
 
-  // ==============================================================
-  // LOGIKA BARU: FILTER SLOT YANG AKTIF (BELUM SELESAI)
-  // ==============================================================
+  // Tampilkan slot yang:
+  // 1. Tanggalnya hari ini atau belum lewat
+  // 2. Belum di-booking siapapun (is_available = true)
+  // Slot completed sudah otomatis terhapus dari DB oleh backend.
   const activeSlots = slots.filter((slot) => {
-    // 1. Sembunyikan slot jika tanggalnya sudah lewat dari hari ini
     const isFutureOrToday = !isBefore(
       new Date(slot.date),
       startOfDay(new Date()),
     );
-    if (!isFutureOrToday) return false;
-
-    // 2. Ambil semua pengajuan aktif di slot ini
-    const validBookings = allBookings.filter(
-      (b) =>
-        b.slot_id === slot.id &&
-        ["pending", "approved", "completed"].includes(b.status),
-    );
-
-    // 3. Jika slot ini ada isinya, dan SEMUA isinya sudah berstatus "Selesai" (Completed),
-    // maka anggap slot ini sudah selesai sepenuhnya.
-    const isFullyCompleted =
-      validBookings.length > 0 &&
-      validBookings.every((b) => b.status === "completed");
-
-    // Tampilkan slot JIKA belum sepenuhnya selesai
-    return !isFullyCompleted;
+    return isFutureOrToday && slot.is_available === true;
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeletingId, setIsDeletingId] = useState(null);
+
   const handleCreate = async () => {
-    await base44.entities.Slot.create({
-      supervisor_email: user?.email,
-      ...form,
-      max_students: parseInt(form.max_students) || 1,
-      period_id: 1,
-      is_available: true,
-    });
-    queryClient.invalidateQueries({ queryKey: ["Slot"] });
-    toast.success("Slot berhasil ditambahkan");
-    setShowDialog(false);
-    setForm({
-      date: "",
-      start_time: "",
-      end_time: "",
-      max_students: 1,
-      mode: "offline",
-      location: "",
-    });
+    setIsSubmitting(true);
+    try {
+      await sibaApi.entities.Slot.create({
+        supervisor_email: user?.email,
+        ...form,
+        max_students: 1,
+        current_bookings: 0,
+        is_available: true,
+      });
+      queryClient.invalidateQueries({ queryKey: ["Slot"] });
+      toast.success("Slot berhasil ditambahkan");
+      setShowDialog(false);
+      setForm({
+        date: "",
+        start_time: "",
+        end_time: "",
+        mode: "offline",
+        location: "",
+      });
+    } catch (err) {
+      toast.error(err.data?.message || err.message || "Gagal menambahkan slot.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDelete = async (id) => {
-    await base44.entities.Slot.delete(id);
-    queryClient.invalidateQueries({ queryKey: ["Slot"] });
-    toast.success("Slot berhasil dihapus");
+    setIsDeletingId(id);
+    try {
+      await sibaApi.entities.Slot.delete(id);
+      queryClient.invalidateQueries({ queryKey: ["Slot"] });
+      toast.success("Slot berhasil dihapus");
+    } catch (err) {
+      toast.error(err.data?.message || err.message || "Gagal menghapus slot.");
+    } finally {
+      setIsDeletingId(null);
+    }
   };
 
   return (
@@ -141,15 +139,9 @@ export default function AvailabilityPage() {
           {activeSlots
             .sort((a, b) => new Date(a.date) - new Date(b.date))
             .map((slot) => {
-              // Cek Kuota
-              const activeBookingsCount = allBookings.filter(
-                (b) =>
-                  b.slot_id === slot.id &&
-                  ["pending", "approved", "completed"].includes(b.status),
-              ).length;
-
-              const isFull =
-                activeBookingsCount >= slot.max_students || !slot.is_available;
+              // Pakai current_bookings langsung dari backend
+              const activeBookingsCount = slot.current_bookings ?? 0;
+              const isFull = !slot.is_available || activeBookingsCount >= slot.max_students;
 
               return (
                 <Card
@@ -201,9 +193,14 @@ export default function AvailabilityPage() {
                           size="icon"
                           className="h-7 w-7 text-destructive border-transparent hover:border-destructive hover:bg-destructive/10 rounded-sm shrink-0 shadow-none"
                           onClick={() => handleDelete(slot.id)}
+                          disabled={isDeletingId === slot.id}
                           title="Hapus Slot"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          {isDeletingId === slot.id ? (
+                            <div className="w-3.5 h-3.5 border-2 border-destructive border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
                         </Button>
                       )}
                     </div>
@@ -310,20 +307,6 @@ export default function AvailabilityPage() {
               </div>
             </div>
 
-            <div>
-              <Label className="font-bold text-foreground">
-                Maks. Mahasiswa per Sesi
-              </Label>
-              <Input
-                type="number"
-                min="1"
-                value={form.max_students}
-                onChange={(e) =>
-                  setForm({ ...form, max_students: e.target.value })
-                }
-                className="mt-1.5 rounded-sm border-border shadow-none"
-              />
-            </div>
 
             <div>
               <Label className="font-bold text-foreground">
@@ -377,9 +360,9 @@ export default function AvailabilityPage() {
             <Button
               className="rounded-sm shadow-none font-bold"
               onClick={handleCreate}
-              disabled={!form.date || !form.start_time || !form.end_time}
+              disabled={!form.date || !form.start_time || !form.end_time || isSubmitting}
             >
-              Simpan Slot
+              {isSubmitting ? "Menyimpan..." : "Simpan Slot"}
             </Button>
           </DialogFooter>
         </DialogContent>

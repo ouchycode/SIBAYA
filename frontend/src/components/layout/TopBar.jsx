@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { sibaApi } from "@/api/apiClient";
 import { Bell, Menu, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,14 +11,17 @@ import {
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 
 export default function TopBar({ user, onToggleSidebar, title }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [open, setOpen] = React.useState(false);
 
   const { data: notifications = [] } = useQuery({
     queryKey: ["notifications", user?.email],
     queryFn: () =>
-      base44.entities.Notification.filter(
+      sibaApi.entities.Notification.filter(
         { recipient_email: user?.email },
         "-created_date",
         20,
@@ -31,7 +34,7 @@ export default function TopBar({ user, onToggleSidebar, title }) {
 
   const markRead = useMutation({
     mutationFn: (id) =>
-      base44.entities.Notification.update(id, { is_read: true }),
+      sibaApi.entities.Notification.update(id, { is_read: true }),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["notifications"] }),
   });
@@ -41,7 +44,7 @@ export default function TopBar({ user, onToggleSidebar, title }) {
       const unread = notifications.filter((n) => !n.is_read);
       await Promise.all(
         unread.map((n) =>
-          base44.entities.Notification.update(n.id, { is_read: true }),
+          sibaApi.entities.Notification.update(n.id, { is_read: true }),
         ),
       );
     },
@@ -59,6 +62,16 @@ export default function TopBar({ user, onToggleSidebar, title }) {
     system: "bg-muted text-muted-foreground border-border",
   };
 
+  const handleNotificationClick = (n) => {
+    if (!n.is_read) {
+      markRead.mutate(n.id);
+    }
+    if (n.link) {
+      navigate(n.link);
+      setOpen(false);
+    }
+  };
+
   return (
     // Dibuat flat dengan border solid di bawah, tanpa shadow berlebihan
     <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 sticky top-0 z-30">
@@ -73,7 +86,7 @@ export default function TopBar({ user, onToggleSidebar, title }) {
       </div>
 
       <div className="flex items-center gap-3">
-        <Popover>
+        <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
@@ -122,7 +135,7 @@ export default function TopBar({ user, onToggleSidebar, title }) {
                 notifications.map((n) => (
                   <div
                     key={n.id}
-                    onClick={() => !n.is_read && markRead.mutate(n.id)}
+                    onClick={() => handleNotificationClick(n)}
                     className={cn(
                       "p-3 border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/50 relative",
                       !n.is_read ? "bg-primary/5" : "opacity-80",
@@ -170,6 +183,27 @@ export default function TopBar({ user, onToggleSidebar, title }) {
             </div>
           </PopoverContent>
         </Popover>
+
+        {/* User Avatar in TopBar */}
+        <div className="hidden md:flex items-center gap-3 pl-3 border-l border-border">
+          <div className="flex flex-col items-end">
+            <span className="text-sm font-bold text-foreground">
+              {user?.full_name || "User"}
+            </span>
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+              {user?.role === 'dosen' ? 'Dosen' : user?.role === 'admin' ? 'Administrator' : 'Mahasiswa'}
+            </span>
+          </div>
+          <div className="w-9 h-9 rounded-full bg-accent text-accent-foreground flex items-center justify-center shrink-0 overflow-hidden border border-border">
+            {user?.photo ? (
+              <img src={user.photo} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-sm font-black">
+                {(user?.full_name || "U")[0].toUpperCase()}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
     </header>
   );

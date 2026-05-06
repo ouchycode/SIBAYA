@@ -24,11 +24,9 @@ export default function MahasiswaDashboard() {
   const { data: mappings = [] } = useEntityList("Mapping");
   const { data: logsAll = [] } = useEntityList("Logbook");
 
-  const supervisor = mappings.find(
-    (m) => m.student_email === user?.email && m.status === "active",
-  );
-  const bookings = bookingsAll.filter((b) => b.student_email === user?.email);
-  const logs = logsAll.filter((l) => l.student_email === user?.email);
+  const supervisor = mappings.find((m) => m.status === "active");
+  const bookings = bookingsAll;
+  const logs = logsAll;
 
   const pendingCount = bookings.filter((b) => b.status === "pending").length;
   const approvedCount = bookings.filter((b) => b.status === "approved").length;
@@ -49,17 +47,28 @@ export default function MahasiswaDashboard() {
   return (
     <div className="space-y-6">
       {/* Banner Selamat Datang - Solid dan Formal */}
-      <div className="bg-card border border-border p-6 rounded-md shadow-sm">
-        <h1 className="text-2xl font-bold text-foreground">
-          Selamat Datang, {user?.full_name || "Mahasiswa"}
-        </h1>
-        <div className="mt-3 inline-flex items-center gap-2 px-3 py-2 bg-primary/5 rounded-sm border border-primary/20 text-sm font-bold text-primary">
-          <BookOpen className="w-4 h-4" />
-          <span>
-            {supervisor
-              ? `Dosen Pembimbing: ${supervisor.supervisor_name}`
-              : "Belum ada alokasi dosen pembimbing"}
-          </span>
+      <div className="bg-card border border-border p-6 rounded-md shadow-sm flex items-center gap-5">
+        <div className="hidden sm:flex w-16 h-16 rounded-full bg-accent text-accent-foreground items-center justify-center shrink-0 border-2 border-border overflow-hidden">
+          {user?.photo ? (
+            <img src={user.photo} alt="Avatar" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-2xl font-black">
+              {(user?.full_name || "M")[0].toUpperCase()}
+            </span>
+          )}
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            Selamat Datang, {user?.full_name || "Mahasiswa"}
+          </h1>
+          <div className="mt-3 inline-flex items-center gap-2 px-3 py-2 bg-primary/5 rounded-sm border border-primary/20 text-sm font-bold text-primary">
+            <BookOpen className="w-4 h-4" />
+            <span>
+              {supervisor
+                ? `Dosen Pembimbing: ${supervisor.supervisor_name}`
+                : "Belum ada alokasi dosen pembimbing"}
+            </span>
+          </div>
         </div>
       </div>
 

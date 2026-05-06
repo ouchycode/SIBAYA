@@ -22,10 +22,8 @@ export default function ExportPage() {
   const { data: mappingsAll = [] } = useEntityList("Mapping");
   const { data: logsAll = [] } = useEntityList("Logbook");
 
-  const mappings = mappingsAll.filter(
-    (m) => m.supervisor_email === user?.email && m.status === "active",
-  );
-  const logs = logsAll.filter((l) => l.supervisor_email === user?.email);
+  const mappings = mappingsAll.filter((m) => m.status === "active");
+  const logs = logsAll;
   const filteredLogs =
     selectedStudent === "all"
       ? logs

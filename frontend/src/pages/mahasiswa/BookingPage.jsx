@@ -12,13 +12,20 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { CalendarDays, Clock, Video, MapPin, Plus } from "lucide-react";
+import {
+  CalendarDays,
+  Clock,
+  Video,
+  MapPin,
+  Plus,
+  Loader2,
+} from "lucide-react";
 import { format, parseISO, startOfDay } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useEntityList } from "@/lib/hooks/useEntityList";
-import { base44 } from "@/api/base44Client";
+import { sibaApi } from "@/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function BookingPage() {
@@ -26,7 +33,6 @@ export default function BookingPage() {
   const { data: user } = useCurrentUser();
   const { data: slots = [] } = useEntityList("Slot");
   const { data: mappings = [] } = useEntityList("Mapping");
-
   const { data: allBookings = [] } = useEntityList("Booking");
 
   const [selected, setSelected] = useState(null);
@@ -38,22 +44,22 @@ export default function BookingPage() {
 
   const today = startOfDay(new Date());
 
+  // Cek apakah mahasiswa sudah punya booking aktif (pending / approved)
+  const hasActiveBooking = allBookings.some(
+    (b) =>
+      b.student_email === user?.email &&
+      ["pending", "approved"].includes(b.status),
+  );
+
+  // Slot yang tersedia: milik dosen pembimbing, belum lewat, dan is_available = true
   const availableSlots = slots.filter((s) => {
     if (!supervisor) return false;
-
     const isCorrectSupervisor =
       s.supervisor_email === supervisor.supervisor_email;
     const isFutureOrToday = startOfDay(parseISO(s.date)) >= today;
-
-    const activeBookingsCount = allBookings.filter(
-      (b) =>
-        b.slot_id === s.id &&
-        ["pending", "approved", "completed"].includes(b.status),
-    ).length;
-
-    const isNotFull = activeBookingsCount < s.max_students;
-
-    return isCorrectSupervisor && isFutureOrToday && isNotFull;
+    // Backend otomatis set is_available=false saat 1 booking masuk
+    const isStillAvailable = s.is_available === true;
+    return isCorrectSupervisor && isFutureOrToday && isStillAvailable;
   });
 
   const grouped = availableSlots.reduce((acc, slot) => {
@@ -62,29 +68,41 @@ export default function BookingPage() {
     return acc;
   }, {});
 
+  const [isBooking, setIsBooking] = useState(false);
+
   const handleBook = async () => {
     if (!selected || !user || !supervisor) return;
+    setIsBooking(true);
+    try {
+      await sibaApi.entities.Booking.create({
+        student_email: user.email,
+        student_name: user.full_name || user.name || user.email,
+        supervisor_email: supervisor.supervisor_email,
+        supervisor_name: supervisor.supervisor_name,
+        slot_id: selected.id,
+        date: selected.date,
+        start_time: selected.start_time,
+        end_time: selected.end_time,
+        mode: selected.mode,
+        location: selected.location,
+        status: "pending",
+        notes,
+        period_id: supervisor.period_id || null,
+      });
 
-    await base44.entities.Booking.create({
-      student_email: user.email,
-      student_name: user.full_name || user.name || user.email,
-      supervisor_email: supervisor.supervisor_email,
-      supervisor_name: supervisor.supervisor_name,
-      slot_id: selected.id,
-      date: selected.date,
-      start_time: selected.start_time,
-      end_time: selected.end_time,
-      mode: selected.mode,
-      location: selected.location,
-      status: "pending",
-      notes,
-      period_id: supervisor.period_id || null,
-    });
-
-    queryClient.invalidateQueries({ queryKey: ["Booking"] });
-    toast.success("Booking berhasil diajukan! Menunggu persetujuan dosen.");
-    setSelected(null);
-    setNotes("");
+      // Refresh slot agar kuota terupdate
+      queryClient.invalidateQueries({ queryKey: ["Slot"] });
+      queryClient.invalidateQueries({ queryKey: ["Booking"] });
+      toast.success("Booking berhasil diajukan! Menunggu persetujuan dosen.");
+      setSelected(null);
+      setNotes("");
+    } catch (err) {
+      toast.error(
+        err.data?.message || err.message || "Gagal mengajukan booking.",
+      );
+    } finally {
+      setIsBooking(false);
+    }
   };
 
   if (!supervisor) {
@@ -157,63 +175,62 @@ export default function BookingPage() {
                 </h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {dateSlots.map((slot) => {
-                    // Hitung Sisa Kuota untuk Label
-                    const activeBookingsCount = allBookings.filter(
-                      (b) =>
-                        b.slot_id === slot.id &&
-                        ["pending", "approved", "completed"].includes(b.status),
-                    ).length;
-                    const sisaKuota = slot.max_students - activeBookingsCount;
-
-                    return (
-                      <Card
-                        key={slot.id}
-                        className="border border-border shadow-none rounded-md bg-background flex flex-col"
-                      >
-                        <CardContent className="p-4 flex flex-col h-full">
-                          <div className="flex items-start justify-between mb-3 gap-2">
-                            <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 px-2 py-1 rounded-sm">
-                              <Clock className="w-3.5 h-3.5 text-primary" />
-                              <span className="font-bold text-sm text-primary">
-                                {slot.start_time} - {slot.end_time}
-                              </span>
-                            </div>
-
-                            <Badge
-                              variant="outline"
-                              className="bg-emerald-50 text-emerald-700 border-emerald-300 text-[9px] font-bold uppercase tracking-wider rounded-sm shrink-0"
-                            >
-                              Tersedia {sisaKuota} Slot
-                            </Badge>
-                          </div>
-
-                          <div className="flex items-center gap-2 text-xs font-bold text-foreground bg-muted/50 p-2.5 rounded-sm border border-border/50 mb-4">
-                            {slot.mode === "online" ? (
-                              <Video className="w-4 h-4 text-blue-500 shrink-0" />
-                            ) : (
-                              <MapPin className="w-4 h-4 text-amber-500 shrink-0" />
-                            )}
-                            <span className="truncate">
-                              {slot.mode === "online"
-                                ? "Online (Daring)"
-                                : `Offline: ${slot.location}`}
+                  {dateSlots.map((slot) => (
+                    <Card
+                      key={slot.id}
+                      className="border border-border shadow-none rounded-md bg-background flex flex-col"
+                    >
+                      <CardContent className="p-4 flex flex-col h-full">
+                        <div className="flex items-start justify-between mb-3 gap-2">
+                          <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 px-2 py-1 rounded-sm">
+                            <Clock className="w-3.5 h-3.5 text-primary" />
+                            <span className="font-bold text-sm text-primary">
+                              {slot.start_time} - {slot.end_time}
                             </span>
                           </div>
 
-                          <div className="mt-auto pt-2 border-t border-border">
-                            <Button
-                              size="sm"
-                              className="w-full gap-2 rounded-sm font-bold shadow-none"
-                              onClick={() => setSelected(slot)}
-                            >
-                              <Plus className="w-4 h-4" /> Pilih Jadwal Ini
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+                          <Badge
+                            variant="outline"
+                            className="bg-emerald-50 text-emerald-700 border-emerald-300 text-[9px] font-bold uppercase tracking-wider rounded-sm shrink-0"
+                          >
+                            Tersedia
+                          </Badge>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-xs font-bold text-foreground bg-muted/50 p-2.5 rounded-sm border border-border/50 mb-4">
+                          {slot.mode === "online" ? (
+                            <Video className="w-4 h-4 text-blue-500 shrink-0" />
+                          ) : (
+                            <MapPin className="w-4 h-4 text-amber-500 shrink-0" />
+                          )}
+                          <span className="truncate">
+                            {slot.mode === "online"
+                              ? "Online (Daring)"
+                              : `Offline: ${slot.location}`}
+                          </span>
+                        </div>
+
+                        <div className="mt-auto pt-2 border-t border-border">
+                          <Button
+                            size="sm"
+                            className="w-full gap-2 rounded-sm font-bold shadow-none"
+                            onClick={() => setSelected(slot)}
+                            disabled={hasActiveBooking}
+                            title={
+                              hasActiveBooking
+                                ? "Anda sudah memiliki booking yang sedang aktif"
+                                : ""
+                            }
+                          >
+                            <Plus className="w-4 h-4" />
+                            {hasActiveBooking
+                              ? "Booking Aktif Ada"
+                              : "Pilih Jadwal Ini"}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               </div>
             ))}
@@ -301,8 +318,16 @@ export default function BookingPage() {
             <Button
               className="rounded-sm shadow-none font-bold"
               onClick={handleBook}
+              disabled={isBooking}
             >
-              Kirim Pengajuan
+              {isBooking ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Mengajukan...
+                </>
+              ) : (
+                "Kirim Pengajuan"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

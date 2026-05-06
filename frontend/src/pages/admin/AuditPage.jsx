@@ -1,14 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, Clock, ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { User, Clock, ShieldCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useEntityList } from "@/lib/hooks/useEntityList";
 
+const ITEMS_PER_PAGE = 10;
+
 const actionColors = {
   create_booking: "bg-primary/10 text-primary border-primary/20",
-  cancel_booking: "bg-amber-50 text-amber-700 border-amber-300",
+  cancelled_booking: "bg-amber-50 text-amber-700 border-amber-300",
   approved_booking: "bg-emerald-50 text-emerald-700 border-emerald-300",
   rejected_booking: "bg-destructive/10 text-destructive border-destructive/20",
   completed_booking: "bg-blue-50 text-blue-700 border-blue-300",
@@ -33,6 +36,12 @@ export default function AuditPage() {
   const logs = [...activityLogs].sort(
     (a, b) => new Date(b.created_date) - new Date(a.created_date),
   );
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.ceil(logs.length / ITEMS_PER_PAGE) || 1;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const currentLogs = logs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   // ==========================================
 
   return (
@@ -50,7 +59,7 @@ export default function AuditPage() {
       </div>
 
       <div className="space-y-3">
-        {logs.map((log) => (
+        {currentLogs.map((log) => (
           <Card
             key={log.id}
             className="rounded-md border border-border shadow-none bg-card hover:bg-muted/10 transition-none"
@@ -111,6 +120,38 @@ export default function AuditPage() {
           </Card>
         ))}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between bg-card border border-border p-3 rounded-md shadow-sm mt-4">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+            Halaman {currentPage} dari {totalPages}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 rounded-sm shadow-none font-bold text-xs"
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Sebelumnya
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 rounded-sm shadow-none font-bold text-xs"
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              disabled={currentPage === totalPages}
+            >
+              Selanjutnya
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

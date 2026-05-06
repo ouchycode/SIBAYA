@@ -23,19 +23,18 @@ import {
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { id as localeId } from "date-fns/locale"; // Import untuk format tanggal Indonesia
-import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useEntityList } from "@/lib/hooks/useEntityList";
 
 const ITEMS_PER_PAGE = 5;
 
 export default function StudentLogbook() {
-  const { data: user } = useCurrentUser();
+  // Backend sudah scope data ke student yang login — tidak perlu filter manual.
+  // Filter manual (student_email === user?.email) menyebabkan race condition
+  // jika allLogs resolve sebelum user, sehingga logbook tampak kosong sementara.
   const { data: allLogs = [] } = useEntityList("Logbook");
 
-  // Ambil semua log milik mahasiswa ini, lalu urutkan dari yang TERLAMA ke TERBARU
-  // untuk memberikan nomor urut absolut (Jurnal #1, #2, dst.)
+  // Urutkan dari yang TERLAMA ke TERBARU untuk nomor urut absolut (Jurnal #1, #2, dst.)
   const baseStudentLogs = allLogs
-    .filter((l) => l.student_email === user?.email)
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .map((log, index) => ({
       ...log,

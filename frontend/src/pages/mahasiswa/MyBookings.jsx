@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import StatusBadge from "@/components/shared/StatusBadge";
 import EmptyState from "@/components/shared/EmptyState";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,33 +14,37 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { CalendarDays, Clock, Video, MapPin, X, Bookmark } from "lucide-react";
+import { CalendarDays, Clock, Video, MapPin, X, Bookmark, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale"; // Import untuk format tanggal Indonesia
 import { toast } from "sonner";
 import { useEntityList } from "@/lib/hooks/useEntityList";
-import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
-import { base44 } from "@/api/base44Client";
+import { sibaApi } from "@/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function MyBookings() {
   const queryClient = useQueryClient();
-  const { data: user } = useCurrentUser();
+  // Backend sudah scope Booking ke student yang login — tidak perlu filter student_email.
   const { data: allBookings = [] } = useEntityList("Booking");
+  const [cancellingId, setCancellingId] = useState(null);
 
-  // LOGIKA BARU: Hanya ambil booking yang masih "pending" atau "approved"
+  // Hanya tampilkan booking aktif (pending / approved)
   const activeBookings = allBookings
-    .filter(
-      (b) =>
-        b.student_email === user?.email &&
-        ["pending", "approved"].includes(b.status),
-    )
-    .sort((a, b) => new Date(a.date) - new Date(b.date)); // Diurutkan dari yang paling dekat
+    .filter((b) => ["pending", "approved"].includes(b.status))
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   const handleCancel = async (id) => {
-    await base44.entities.Booking.update(id, { status: "cancelled" });
-    queryClient.invalidateQueries({ queryKey: ["Booking"] });
-    toast.success("Booking berhasil dibatalkan");
+    setCancellingId(id);
+    try {
+      await sibaApi.entities.Booking.update(id, { status: "cancelled" });
+      queryClient.invalidateQueries({ queryKey: ["Booking"] });
+      queryClient.invalidateQueries({ queryKey: ["Slot"] });
+      toast.success("Booking berhasil dibatalkan.");
+    } catch (err) {
+      toast.error(err.data?.message || err.message || "Gagal membatalkan booking.");
+    } finally {
+      setCancellingId(null);
+    }
   };
 
   const BookingCard = ({ b }) => (
@@ -92,8 +96,12 @@ export default function MyBookings() {
                     variant="outline"
                     size="sm"
                     className="h-8 rounded-sm text-destructive border-destructive/30 hover:bg-destructive hover:text-destructive-foreground font-bold shadow-none"
+                    disabled={cancellingId === b.id}
                   >
-                    <X className="w-4 h-4 mr-1" /> Batal
+                    {cancellingId === b.id
+                      ? <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      : <X className="w-4 h-4 mr-1" />}
+                    Batal
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent className="rounded-md border-border sm:max-w-md">

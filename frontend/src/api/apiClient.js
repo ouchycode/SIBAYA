@@ -31,6 +31,19 @@ async function request(path, options = {}) {
   return data;
 }
 
+function getRolePathPrefix() {
+  const rawUser = localStorage.getItem(USER_KEY);
+  if (!rawUser) {
+    throw new Error("User belum login.");
+  }
+
+  const user = JSON.parse(rawUser);
+  if (user?.role === "admin") return "/admin";
+  if (user?.role === "dosen") return "/dosen";
+  if (user?.role === "mahasiswa") return "/mahasiswa";
+  throw new Error("Role user tidak valid.");
+}
+
 function createEntityClient(entityName) {
   const resource = entityName.toLowerCase();
   const rolePath = getRolePathPrefix();
@@ -69,20 +82,7 @@ function createEntityClient(entityName) {
   };
 }
 
-function getRolePathPrefix() {
-  const rawUser = localStorage.getItem(USER_KEY);
-  if (!rawUser) {
-    throw new Error("User belum login.");
-  }
-
-  const user = JSON.parse(rawUser);
-  if (user?.role === "admin") return "/admin";
-  if (user?.role === "dosen") return "/dosen";
-  if (user?.role === "mahasiswa") return "/mahasiswa";
-  throw new Error("Role user tidak valid.");
-}
-
-export const base44 = {
+export const sibaApi = {
   auth: {
     async login(email, password) {
       const payload = await request("/auth/login", {
@@ -123,3 +123,4 @@ export const base44 = {
     },
   ),
 };
+

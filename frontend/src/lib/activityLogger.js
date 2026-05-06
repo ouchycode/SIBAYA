@@ -1,4 +1,4 @@
-import { base44 } from "@/api/base44Client";
+﻿import { sibaApi } from "@/api/apiClient";
 
 export async function logActivity({
   actorEmail,
@@ -9,7 +9,7 @@ export async function logActivity({
   targetType,
   targetId,
 }) {
-  await base44.entities.ActivityLog.create({
+  await sibaApi.entities.ActivityLog.create({
     actor_email: actorEmail,
     actor_name: actorName || actorEmail,
     actor_role: actorRole || "unknown",

@@ -18,14 +18,20 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $validated = $request->validate([
-            'email' => ['required', 'email'],
+            'email' => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
 
-        $user = User::where('email', $validated['email'])->first();
+        $login = $validated['email'];
+
+        $user = User::where('email', $login)
+            ->orWhere('nim', $login)
+            ->orWhere('nip', $login)
+            ->first();
+
         if (!$user || !Hash::check($validated['password'], $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Email atau password salah.'],
+                'email' => ['Kredensial tidak valid.'],
             ]);
         }
 

@@ -24,6 +24,7 @@ class User extends Authenticatable
         'nip',
         'program_studi',
         'status',
+        'photo',
     ];
 
     protected $hidden = [

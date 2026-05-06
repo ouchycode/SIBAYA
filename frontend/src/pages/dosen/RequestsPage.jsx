@@ -23,42 +23,56 @@ import {
   Video,
   ChevronLeft,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { toast } from "sonner";
-import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useEntityList } from "@/lib/hooks/useEntityList";
-import { base44 } from "@/api/base44Client";
+import { sibaApi } from "@/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
 
 const ITEMS_PER_PAGE = 5;
 
 export default function RequestsPage() {
   const queryClient = useQueryClient();
-  const { data: user } = useCurrentUser();
+  // Backend sudah scope Booking ke supervisor yang login — tidak perlu filter manual.
   const { data: allBookings = [] } = useEntityList("Booking");
 
   // State untuk Tabs dan Pagination
   const [activeTab, setActiveTab] = useState("pending");
   const [currentPage, setCurrentPage] = useState(1);
+  const [loadingId, setLoadingId] = useState(null); // ID booking yang sedang diproses
 
   const [rejectDialog, setRejectDialog] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
 
+  // Backend sudah mengembalikan data milik dosen ini saja
   const bookings = allBookings
-    .filter((b) => b.supervisor_email === user?.email)
-    .sort((a, b) => new Date(b.date) - new Date(a.date)); // Urutkan terbaru ke terlama
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 
   const updateStatus = async (id, status, reason) => {
-    await base44.entities.Booking.update(id, {
-      status,
-      reject_reason: reason || null,
-    });
-    queryClient.invalidateQueries({ queryKey: ["Booking"] });
-    toast.success("Status berhasil diperbarui");
-    setRejectDialog(null);
-    setRejectReason("");
+    setLoadingId(id);
+    try {
+      await sibaApi.entities.Booking.update(id, {
+        status,
+        reject_reason: reason || null,
+      });
+      queryClient.invalidateQueries({ queryKey: ["Booking"] });
+      queryClient.invalidateQueries({ queryKey: ["Slot"] });
+      toast.success(
+        status === "approved" ? "Pengajuan berhasil disetujui." :
+        status === "rejected" ? "Pengajuan berhasil ditolak." :
+        status === "completed" ? "Sesi bimbingan ditandai selesai." :
+        "Status berhasil diperbarui."
+      );
+      setRejectDialog(null);
+      setRejectReason("");
+    } catch (err) {
+      toast.error(err.data?.message || err.message || "Gagal memperbarui status.");
+    } finally {
+      setLoadingId(null);
+    }
   };
 
   // Pengelompokan Data
@@ -190,14 +204,19 @@ export default function RequestsPage() {
                   size="sm"
                   className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-sm font-bold shadow-none flex-1 sm:flex-auto"
                   onClick={() => updateStatus(booking.id, "approved")}
+                  disabled={loadingId === booking.id}
                 >
-                  <CheckCircle className="w-3.5 h-3.5" /> Setujui
+                  {loadingId === booking.id
+                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    : <CheckCircle className="w-3.5 h-3.5" />}
+                  Setujui
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
                   className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive hover:text-destructive-foreground rounded-sm font-bold shadow-none flex-1 sm:flex-auto"
                   onClick={() => setRejectDialog(booking)}
+                  disabled={loadingId === booking.id}
                 >
                   <XCircle className="w-3.5 h-3.5" /> Tolak
                 </Button>
@@ -210,8 +229,12 @@ export default function RequestsPage() {
                 variant="outline"
                 className="gap-1.5 mt-1 lg:mt-2 rounded-sm font-bold shadow-none w-full sm:w-auto border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground"
                 onClick={() => updateStatus(booking.id, "completed")}
+                disabled={loadingId === booking.id}
               >
-                <CheckCircle className="w-3.5 h-3.5" /> Tandai Selesai
+                {loadingId === booking.id
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  : <CheckCircle className="w-3.5 h-3.5" />}
+                Tandai Selesai
               </Button>
             )}
           </div>
@@ -356,8 +379,11 @@ export default function RequestsPage() {
               onClick={() =>
                 updateStatus(rejectDialog.id, "rejected", rejectReason)
               }
+              disabled={loadingId === rejectDialog?.id}
             >
-              Konfirmasi Tolak
+              {loadingId === rejectDialog?.id
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Memproses...</>
+                : "Konfirmasi Tolak"}
             </Button>
           </DialogFooter>
         </DialogContent>

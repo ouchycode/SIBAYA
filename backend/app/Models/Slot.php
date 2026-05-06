@@ -18,4 +18,10 @@ class Slot extends Model
         'period_id',
         'is_available',
     ];
+
+    protected $casts = [
+        'is_available' => 'boolean',
+        'max_students' => 'integer',
+        'current_bookings' => 'integer',
+    ];
 }

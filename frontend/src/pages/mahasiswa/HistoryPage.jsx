@@ -22,39 +22,27 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useEntityList } from "@/lib/hooks/useEntityList";
 
 const ITEMS_PER_PAGE = 5;
 
 export default function HistoryPage() {
-  const { data: user } = useCurrentUser();
+  // Backend sudah scope Booking ke student yang login — tidak perlu filter student_email.
   const { data: allBookings = [] } = useEntityList("Booking");
 
   // State untuk Pagination dan Filter
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // ==============================================================
-  // LOGIKA PENGURUTAN & FILTER DATA KHUSUS RIWAYAT
-  // ==============================================================
+  // Filter hanya status riwayat (completed/rejected/cancelled) + dropdown filter
   const bookings = allBookings
     .filter((b) => {
-      // 1. Pastikan milik mahasiswa ini
-      if (b.student_email !== user?.email) return false;
-
-      // 2. Pastikan statusnya adalah status "Riwayat" (bukan aktif)
-      const isHistoryStatus = ["completed", "rejected", "cancelled"].includes(
-        b.status,
-      );
+      const isHistoryStatus = ["completed", "rejected", "cancelled"].includes(b.status);
       if (!isHistoryStatus) return false;
-
-      // 3. Terapkan filter dari dropdown jika tidak "all"
       if (statusFilter !== "all" && b.status !== statusFilter) return false;
-
       return true;
     })
-    .sort((a, b) => new Date(b.date) - new Date(a.date)); // Diurutkan dari yang terbaru
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 
   // Logika Pagination (Harus dihitung setelah array di-filter)
   const totalPages = Math.ceil(bookings.length / ITEMS_PER_PAGE) || 1;

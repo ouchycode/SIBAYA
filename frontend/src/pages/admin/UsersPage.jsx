@@ -43,7 +43,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useEntityList } from "@/lib/hooks/useEntityList";
-import { base44 } from "@/api/base44Client";
+import { sibaApi } from "@/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
 
 const ITEMS_PER_PAGE = 5;
@@ -87,6 +87,8 @@ export default function UsersPage() {
 
   // State untuk Alert Penghapusan
   const [userToDelete, setUserToDelete] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Pengelompokan Data
   const dosens = users.filter((u) => u.role === "dosen");
@@ -153,14 +155,15 @@ export default function UsersPage() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       if (editUserId) {
         // UPDATE USER
-        await base44.entities.User.update(editUserId, form);
+        await sibaApi.entities.User.update(editUserId, form);
         toast.success("Data pengguna berhasil diperbarui");
       } else {
         // CREATE USER
-        await base44.entities.User.create(form);
+        await sibaApi.entities.User.create(form);
         toast.success("Pengguna baru berhasil ditambahkan");
       }
       queryClient.invalidateQueries({ queryKey: ["User"] });
@@ -182,8 +185,10 @@ export default function UsersPage() {
           toast.error(`Gagal: ${firstError}`);
         }
       } else {
-        toast.error("Terjadi kesalahan sistem. Gagal menyimpan data.");
+        toast.error(error.data?.message || error.message || "Terjadi kesalahan sistem. Gagal menyimpan data.");
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -192,16 +197,18 @@ export default function UsersPage() {
   // ==========================================
   const handleDelete = async () => {
     if (!userToDelete) return;
+    setIsDeleting(true);
     try {
-      await base44.entities.User.delete(userToDelete.id);
+      await sibaApi.entities.User.delete(userToDelete.id);
       toast.success("Pengguna berhasil dihapus");
       queryClient.invalidateQueries({ queryKey: ["User"] });
     } catch (error) {
       console.error("Gagal hapus user:", error);
       toast.error(
-        "Gagal menghapus pengguna. Pastikan akun ini tidak memiliki data akademik yang terikat.",
+        error.data?.message || error.message || "Gagal menghapus pengguna. Pastikan akun ini tidak memiliki data akademik yang terikat.",
       );
     } finally {
+      setIsDeleting(false);
       setUserToDelete(null); // Tutup dialog setelah selesai
     }
   };
@@ -214,8 +221,12 @@ export default function UsersPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             {/* Profil Singkat */}
             <div className="flex items-center gap-3 w-full sm:w-2/5">
-              <div className="w-10 h-10 rounded bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                <Icon className="w-4 h-4 text-primary" />
+              <div className="w-10 h-10 rounded bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 overflow-hidden">
+                {u.photo ? (
+                  <img src={u.photo} alt={u.full_name} className="w-full h-full object-cover" />
+                ) : (
+                  <Icon className="w-4 h-4 text-primary" />
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-foreground truncate">
@@ -567,8 +578,9 @@ export default function UsersPage() {
             <Button
               className="rounded-sm shadow-none font-bold"
               onClick={handleSave}
+              disabled={isSubmitting}
             >
-              Simpan Data
+              {isSubmitting ? "Menyimpan..." : "Simpan Data"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -604,8 +616,9 @@ export default function UsersPage() {
             <AlertDialogAction
               className="rounded-sm shadow-none font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={handleDelete}
+              disabled={isDeleting}
             >
-              Ya, Hapus Permanen
+              {isDeleting ? "Memproses..." : "Ya, Hapus Permanen"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

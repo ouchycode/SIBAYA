@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
+import Footer from "./Footer";
 import { cn } from "@/lib/utils";
 
 const pageTitles = {
@@ -20,6 +21,7 @@ const pageTitles = {
   "/users": "Kelola Pengguna",
   "/statistics": "Statistik Akademik",
   "/audit": "Audit Trail Sistem",
+  "/settings": "Pengaturan Profil",
 };
 
 export default function AppLayout({ user }) {
@@ -70,6 +72,8 @@ export default function AppLayout({ user }) {
         <main className="flex-1 p-4 md:p-6 lg:p-8 w-full max-w-[1600px] mx-auto animate-in fade-in duration-500">
           <Outlet />
         </main>
+
+        <Footer />
       </div>
     </div>
   );

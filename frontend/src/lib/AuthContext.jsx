@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { sibaApi } from "@/api/apiClient";
 
 const AuthContext = createContext();
 
@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }) => {
     try {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
+      const currentUser = await sibaApi.auth.me();
       setUser(currentUser);
       setIsAuthenticated(true);
       setAuthError(null);
@@ -60,27 +60,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = (shouldRedirect = true) => {
+  const logout = () => {
+    // Hapus token & panggil endpoint logout di backend
+    sibaApi.auth.logout(null);
+    // Reset state — App.jsx akan otomatis redirect ke /login
     setUser(null);
     setIsAuthenticated(false);
-
-    if (shouldRedirect) {
-      // Use the SDK's logout method which handles token cleanup and redirect
-      base44.auth.logout(window.location.href);
-    } else {
-      // Just remove the token without redirect
-      base44.auth.logout();
-    }
-  };
-
-  const navigateToLogin = () => {
-    base44.auth.redirectToLogin("/login");
+    setAuthChecked(false);
+    setAuthError(null);
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        setUser,
         isAuthenticated,
         isLoadingAuth,
         isLoadingPublicSettings,
@@ -88,7 +82,6 @@ export const AuthProvider = ({ children }) => {
         appPublicSettings,
         authChecked,
         logout,
-        navigateToLogin,
         checkUserAuth,
         checkAppState,
       }}

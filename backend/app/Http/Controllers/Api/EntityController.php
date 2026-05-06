@@ -77,7 +77,63 @@ class EntityController extends Controller
         $payload = $this->sanitizePayload($entity, $payload);
         $this->authorizeCreate($request, $entity, $payload);
         $payload = $this->restrictPayloadByRole($request, $entity, $payload);
+
+        // === BOOKING: Validasi & update kuota slot (1 slot = 1 mahasiswa) ===
+        if ($entity === 'booking' && !empty($payload['slot_id'])) {
+            $slot = Slot::find($payload['slot_id']);
+            abort_unless($slot, 422, 'Slot tidak ditemukan.');
+
+            // Cek apakah slot masih tersedia
+            abort_unless($slot->is_available, 422, 'Slot ini sudah tidak tersedia. Silakan pilih jadwal lain.');
+
+            // Cek apakah mahasiswa sudah booking slot ini (mencegah booking ganda)
+            $alreadyBooked = Booking::where('slot_id', $slot->id)
+                ->where('student_email', $payload['student_email'])
+                ->whereIn('status', ['pending', 'approved'])
+                ->exists();
+            abort_if($alreadyBooked, 422, 'Anda sudah mengajukan booking untuk slot ini.');
+
+            // Hitung booking aktif (1 slot hanya boleh 1 booking aktif)
+            $activeCount = Booking::where('slot_id', $slot->id)
+                ->whereIn('status', ['pending', 'approved'])
+                ->count();
+
+            abort_if($activeCount >= 1, 422, 'Slot ini sudah dibooking oleh mahasiswa lain. Silakan pilih jadwal lain.');
+
+            // Tandai slot tidak tersedia lagi setelah berhasil dibooking
+            $slot->update([
+                'current_bookings' => 1,
+                'is_available'     => false,
+            ]);
+        }
+
         $record = $modelClass::query()->create($payload);
+
+        // ==== NOTIFICATIONS ====
+        if ($entity === 'booking') {
+            \App\Models\Notification::create([
+                'recipient_email' => $record->supervisor_email,
+                'title' => 'Pengajuan Bimbingan Baru',
+                'message' => "Mahasiswa {$record->student_name} mengajukan bimbingan pada tanggal " . \Carbon\Carbon::parse($record->date)->format('d M Y') . ".",
+                'type' => 'booking_new',
+                'link' => '/requests',
+            ]);
+        }
+
+        // ==== ACTIVITY LOGGING ====
+        if ($entity !== 'activitylog' && $entity !== 'notification') {
+            $user = $request->user();
+            \App\Models\ActivityLog::create([
+                'actor_email' => $user->email,
+                'actor_name' => $user->name ?? $user->full_name ?? $user->email,
+                'actor_role' => $user->role,
+                'action' => "create_{$entity}",
+                'description' => "Pengguna {$user->email} menambahkan data {$entity} baru.",
+                'target_type' => $entity,
+                'target_id' => (string) $record->id,
+            ]);
+        }
+
         return response()->json($this->transformDates($record->toArray()), 201);
     }
 
@@ -94,6 +150,99 @@ class EntityController extends Controller
         $payload = $this->restrictPayloadByRole($request, $entity, $payload, true);
         $record->update($payload);
 
+        // ==== NOTIFICATIONS ====
+        if ($entity === 'booking' && $record->wasChanged('status')) {
+            $newStatus = $record->status;
+            $recipient = '';
+            
+            if ($newStatus === 'approved') {
+                $recipient = $record->student_email;
+                $title = 'Bimbingan Disetujui';
+                $message = "Pengajuan bimbingan Anda pada tanggal " . \Carbon\Carbon::parse($record->date)->format('d M Y') . " telah disetujui.";
+                $type = 'booking_approved';
+                $link = '/my-bookings';
+            } elseif ($newStatus === 'rejected') {
+                $recipient = $record->student_email;
+                $title = 'Bimbingan Ditolak';
+                $message = "Pengajuan bimbingan Anda ditolak. Alasan: " . ($record->reject_reason ?? 'Tidak ada alasan');
+                $type = 'booking_rejected';
+                $link = '/my-bookings';
+            } elseif ($newStatus === 'cancelled') {
+                $recipient = $record->supervisor_email;
+                $title = 'Bimbingan Dibatalkan';
+                $message = "Mahasiswa {$record->student_name} telah membatalkan bimbingan.";
+                $type = 'booking_cancelled';
+                $link = '/requests';
+            }
+
+            if ($recipient) {
+                \App\Models\Notification::create([
+                    'recipient_email' => $recipient,
+                    'title' => $title,
+                    'message' => $message,
+                    'type' => $type,
+                    'link' => $link,
+                ]);
+            }
+        }
+
+        // === BOOKING: Sinkronisasi ulang kuota slot setelah status berubah ===
+        if ($entity === 'booking' && !empty($record->slot_id)) {
+            $slot = Slot::find($record->slot_id);
+            if ($slot) {
+                $newStatus = $payload['status'] ?? $record->status;
+
+                // Jika bimbingan selesai (completed) → hapus slot agar tidak muncul lagi
+                if ($newStatus === 'completed') {
+                    $slot->delete();
+                } elseif (in_array($newStatus, ['rejected', 'cancelled'])) {
+                    // Jika ditolak/dibatalkan → kembalikan slot menjadi tersedia
+                    $activeCount = Booking::where('slot_id', $slot->id)
+                        ->whereIn('status', ['pending', 'approved'])
+                        ->count();
+                    $slot->update([
+                        'current_bookings' => $activeCount,
+                        'is_available'     => $activeCount < $slot->max_students,
+                    ]);
+                } else {
+                    // Status lain → sinkronisasi biasa
+                    $activeCount = Booking::where('slot_id', $slot->id)
+                        ->whereIn('status', ['pending', 'approved'])
+                        ->count();
+                    $slot->update([
+                        'current_bookings' => $activeCount,
+                        'is_available'     => $activeCount < $slot->max_students,
+                    ]);
+                }
+            }
+        }
+
+        // ==== ACTIVITY LOGGING ====
+        if ($entity !== 'activitylog' && $entity !== 'notification') {
+            $user = $request->user();
+            
+            $actionName = "update_{$entity}";
+            $desc = "Pengguna {$user->email} memperbarui data {$entity} (ID: {$record->id}).";
+
+            if ($entity === 'booking' && isset($payload['status'])) {
+                $actionName = "{$payload['status']}_booking";
+                $desc = "Status booking (ID: {$record->id}) diperbarui menjadi {$payload['status']}.";
+            } elseif ($entity === 'mapping' && isset($payload['status']) && $payload['status'] === 'inactive') {
+                $actionName = "deactivate_mapping";
+                $desc = "Mapping dosen pembimbing (ID: {$record->id}) dinonaktifkan.";
+            }
+
+            \App\Models\ActivityLog::create([
+                'actor_email' => $user->email,
+                'actor_name' => $user->name ?? $user->full_name ?? $user->email,
+                'actor_role' => $user->role,
+                'action' => $actionName,
+                'description' => $desc,
+                'target_type' => $entity,
+                'target_id' => (string) $record->id,
+            ]);
+        }
+
         return response()->json($this->transformDates($record->fresh()->toArray()));
     }
 
@@ -106,6 +255,21 @@ class EntityController extends Controller
         $record = $modelClass::query()->findOrFail($id);
         $this->authorizeRecordAccess(request(), $entity, $record, 'delete');
         $record->delete();
+
+        // ==== ACTIVITY LOGGING ====
+        if ($entity !== 'activitylog' && $entity !== 'notification') {
+            $user = request()->user();
+            \App\Models\ActivityLog::create([
+                'actor_email' => $user->email,
+                'actor_name' => $user->name ?? $user->full_name ?? $user->email,
+                'actor_role' => $user->role,
+                'action' => "delete_{$entity}",
+                'description' => "Pengguna {$user->email} menghapus data {$entity} (ID: {$id}).",
+                'target_type' => $entity,
+                'target_id' => (string) $id,
+            ]);
+        }
+
         return response()->json(status: 204);
     }
 
@@ -144,6 +308,7 @@ class EntityController extends Controller
                 
                 'program_studi' => ['sometimes', 'nullable', 'string', 'max:255'],
                 'status' => ['sometimes', 'in:active,inactive,graduated,cuti'],
+                'photo' => ['sometimes', 'nullable', 'string'],
             ],
             'period' => [
                 'name' => [$isUpdate ? 'sometimes' : 'required', 'string', 'max:255'],
@@ -375,7 +540,7 @@ class EntityController extends Controller
         }
 
         if ($entity === 'user') {
-            return Arr::only($payload, ['name', 'full_name', 'password']);
+            return Arr::only($payload, ['name', 'full_name', 'password', 'photo']);
         }
 
         if ($user->role === 'dosen' && $entity === 'booking' && $isUpdate) {

@@ -31,17 +31,22 @@ import {
   CalendarDays,
   Pencil,
   Trash2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { toast } from "sonner";
 import { useEntityList } from "@/lib/hooks/useEntityList";
-import { base44 } from "@/api/base44Client";
+import { sibaApi } from "@/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function PeriodsPage() {
   const queryClient = useQueryClient();
   const { data: periods = [] } = useEntityList("Period");
+
+  const ITEMS_PER_PAGE = 5;
+  const [currentPage, setCurrentPage] = useState(1);
 
   // State untuk Dialog Form (Create/Edit)
   const [showDialog, setShowDialog] = useState(false);
@@ -55,6 +60,8 @@ export default function PeriodsPage() {
 
   // State untuk Alert Hapus
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const openCreate = () => {
     setEditId(null);
@@ -74,12 +81,13 @@ export default function PeriodsPage() {
   };
 
   const handleSave = async () => {
+    setIsSubmitting(true);
     try {
       if (editId) {
-        await base44.entities.Period.update(editId, form);
+        await sibaApi.entities.Period.update(editId, form);
         toast.success("Periode berhasil diperbarui");
       } else {
-        await base44.entities.Period.create({
+        await sibaApi.entities.Period.create({
           ...form,
           is_active: false,
         });
@@ -88,21 +96,25 @@ export default function PeriodsPage() {
       queryClient.invalidateQueries({ queryKey: ["Period"] });
       setShowDialog(false);
     } catch (error) {
-      toast.error("Gagal menyimpan periode");
+      toast.error(error.data?.message || error.message || "Gagal menyimpan periode");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    setIsDeleting(true);
     try {
-      await base44.entities.Period.delete(deleteTarget.id);
+      await sibaApi.entities.Period.delete(deleteTarget.id);
       toast.success("Periode berhasil dihapus");
       queryClient.invalidateQueries({ queryKey: ["Period"] });
     } catch (error) {
       toast.error(
-        "Gagal menghapus periode. Pastikan tidak ada jadwal yang terikat pada periode ini.",
+        error.data?.message || error.message || "Gagal menghapus periode. Pastikan tidak ada jadwal yang terikat pada periode ini.",
       );
     } finally {
+      setIsDeleting(false);
       setDeleteTarget(null);
     }
   };
@@ -115,19 +127,23 @@ export default function PeriodsPage() {
           periods
             .filter((p) => p.id !== id && p.is_active)
             .map((p) =>
-              base44.entities.Period.update(p.id, { is_active: false }),
+              sibaApi.entities.Period.update(p.id, { is_active: false }),
             ),
         );
       }
-      await base44.entities.Period.update(id, { is_active: active });
+      await sibaApi.entities.Period.update(id, { is_active: active });
       queryClient.invalidateQueries({ queryKey: ["Period"] });
       toast.success(
         active ? "Periode telah diaktifkan" : "Periode dinonaktifkan",
       );
     } catch (error) {
-      toast.error("Gagal memperbarui status periode");
+      toast.error(error.data?.message || error.message || "Gagal memperbarui status periode");
     }
   };
+
+  const totalPages = Math.ceil(periods.length / ITEMS_PER_PAGE) || 1;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const currentPeriods = periods.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   return (
     <div className="space-y-6">
@@ -164,7 +180,7 @@ export default function PeriodsPage() {
             <div className="col-span-4 text-right">Kontrol & Status</div>
           </div>
 
-          {periods.map((p) => (
+          {currentPeriods.map((p) => (
             <Card
               key={p.id}
               className={`rounded-md shadow-none transition-none ${
@@ -258,6 +274,38 @@ export default function PeriodsPage() {
               </CardContent>
             </Card>
           ))}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between bg-card border border-border p-3 rounded-md shadow-sm mt-4">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                Halaman {currentPage} dari {totalPages}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 rounded-sm shadow-none font-bold text-xs"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Sebelumnya
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 rounded-sm shadow-none font-bold text-xs"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                >
+                  Selanjutnya
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -336,9 +384,9 @@ export default function PeriodsPage() {
             <Button
               className="rounded-sm shadow-none font-bold"
               onClick={handleSave}
-              disabled={!form.name || !form.start_date || !form.end_date}
+              disabled={!form.name || !form.start_date || !form.end_date || isSubmitting}
             >
-              {editId ? "Simpan Perubahan" : "Simpan Periode"}
+              {isSubmitting ? "Menyimpan..." : (editId ? "Simpan Perubahan" : "Simpan Periode")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -369,9 +417,10 @@ export default function PeriodsPage() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
+              disabled={isDeleting}
               className="rounded-sm font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Ya, Hapus
+              {isDeleting ? "Menghapus..." : "Ya, Hapus"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

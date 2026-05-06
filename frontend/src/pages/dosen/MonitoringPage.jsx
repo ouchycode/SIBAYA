@@ -19,7 +19,10 @@ import {
   AlertCircle,
   Filter,
   Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { format, subDays } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
@@ -35,13 +38,9 @@ export default function MonitoringPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const mappings = mappingsAll.filter(
-    (m) => m.supervisor_email === user?.email && m.status === "active",
-  );
-  const bookings = bookingsAll.filter(
-    (b) => b.supervisor_email === user?.email,
-  );
-  const logs = logsAll.filter((l) => l.supervisor_email === user?.email);
+  const mappings = mappingsAll.filter((m) => m.status === "active");
+  const bookings = bookingsAll;
+  const logs = logsAll;
   const thirtyDaysAgo = subDays(new Date(), 30);
 
   // Kalkulasi Statistik Utama (Tetap utuh seperti aslinya)
@@ -99,6 +98,22 @@ export default function MonitoringPage() {
 
     return true;
   });
+
+  const ITEMS_PER_PAGE = 5;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset page when filter or search changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchQuery]);
+
+  const sortedStudents = [...filteredStudents].sort(
+    (a, b) => a.latestProgress - b.latestProgress,
+  );
+
+  const totalPages = Math.ceil(sortedStudents.length / ITEMS_PER_PAGE) || 1;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const currentStudents = sortedStudents.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   return (
     <div className="space-y-6">
@@ -195,13 +210,12 @@ export default function MonitoringPage() {
             </div>
           ) : (
             <div className="flex flex-col">
-              {filteredStudents
-                .sort((a, b) => a.latestProgress - b.latestProgress)
+              {currentStudents
                 .map((s, index) => (
                   <div
                     key={s.id}
                     className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4 transition-none ${
-                      index !== filteredStudents.length - 1
+                      index !== currentStudents.length - 1
                         ? "border-b border-border/60"
                         : ""
                     } ${s.isInactive ? "bg-red-50/30" : "hover:bg-muted/30"}`}
@@ -276,6 +290,38 @@ export default function MonitoringPage() {
           )}
         </CardContent>
       </Card>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between bg-card border border-border p-3 rounded-md shadow-sm mt-4">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+            Halaman {currentPage} dari {totalPages}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 rounded-sm shadow-none font-bold text-xs"
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Sebelumnya
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 rounded-sm shadow-none font-bold text-xs"
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              disabled={currentPage === totalPages}
+            >
+              Selanjutnya
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

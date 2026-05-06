@@ -16,8 +16,9 @@ import {
   UserCheck,
   CalendarDays,
   ClipboardList,
+  Settings,
 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { sibaApi } from "@/api/apiClient";
 
 const menuConfig = {
   mahasiswa: [
@@ -140,10 +141,14 @@ export default function Sidebar({ user, collapsed, onToggle: _onToggle }) {
               collapsed && "justify-center",
             )}
           >
-            <div className="w-10 h-10 rounded bg-accent text-accent-foreground flex items-center justify-center shrink-0">
-              <span className="text-base font-black">
-                {(user?.full_name || "U")[0].toUpperCase()}
-              </span>
+            <div className="w-10 h-10 rounded bg-accent text-accent-foreground flex items-center justify-center shrink-0 overflow-hidden">
+              {user?.photo ? (
+                <img src={user.photo} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-base font-black">
+                  {(user?.full_name || "U")[0].toUpperCase()}
+                </span>
+              )}
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
@@ -157,19 +162,35 @@ export default function Sidebar({ user, collapsed, onToggle: _onToggle }) {
             )}
           </div>
 
-          <button
-            onClick={() => base44.auth.logout("/login")}
-            className={cn(
-              "flex items-center justify-center gap-2 rounded-md font-bold text-xs",
-              collapsed
-                ? "w-10 h-10 bg-destructive/20 text-destructive-foreground hover:bg-destructive"
-                : "w-full py-2.5 bg-primary-foreground/10 text-primary-foreground hover:bg-destructive hover:text-destructive-foreground",
-            )}
-            title={collapsed ? "Keluar" : undefined}
-          >
-            <LogOut className="w-[18px] h-[18px]" />
-            {!collapsed && <span>Keluar Sistem</span>}
-          </button>
+          <div className="flex flex-col gap-2 w-full mt-3">
+            <Link
+              to="/settings"
+              className={cn(
+                "flex items-center justify-center gap-2 rounded-md font-bold text-xs",
+                collapsed
+                  ? "w-10 h-10 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20"
+                  : "w-full py-2.5 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20",
+              )}
+              title={collapsed ? "Pengaturan" : undefined}
+            >
+              <Settings className="w-[18px] h-[18px]" />
+              {!collapsed && <span>Pengaturan Profil</span>}
+            </Link>
+
+            <button
+              onClick={() => sibaApi.auth.logout("/login")}
+              className={cn(
+                "flex items-center justify-center gap-2 rounded-md font-bold text-xs",
+                collapsed
+                  ? "w-10 h-10 bg-destructive/20 text-destructive-foreground hover:bg-destructive"
+                  : "w-full py-2.5 bg-primary-foreground/10 text-primary-foreground hover:bg-destructive hover:text-destructive-foreground",
+              )}
+              title={collapsed ? "Keluar" : undefined}
+            >
+              <LogOut className="w-[18px] h-[18px]" />
+              {!collapsed && <span>Keluar Sistem</span>}
+            </button>
+          </div>
         </div>
       </div>
     </aside>

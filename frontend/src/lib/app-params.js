@@ -13,9 +13,13 @@ const getAppParamValue = (
   if (isNode) {
     return defaultValue;
   }
-  const storageKey = `base44_${toSnakeCase(paramName)}`;
+
+  // GANTI: Gunakan prefix siba_ agar konsisten
+  const storageKey = `siba_${toSnakeCase(paramName)}`;
+
   const urlParams = new URLSearchParams(window.location.search);
   const searchParam = urlParams.get(paramName);
+
   if (removeFromUrl) {
     urlParams.delete(paramName);
     const newUrl = `${window.location.pathname}${
@@ -23,39 +27,42 @@ const getAppParamValue = (
     }${window.location.hash}`;
     window.history.replaceState({}, document.title, newUrl);
   }
+
   if (searchParam) {
     storage.setItem(storageKey, searchParam);
     return searchParam;
   }
+
   if (defaultValue) {
-    storage.setItem(storageKey, defaultValue);
-    return defaultValue;
+    // Hanya simpan jika di storage masih kosong
+    if (!storage.getItem(storageKey)) {
+      storage.setItem(storageKey, defaultValue);
+    }
+    return storage.getItem(storageKey) || defaultValue;
   }
+
   const storedValue = storage.getItem(storageKey);
-  if (storedValue) {
-    return storedValue;
-  }
-  return null;
+  return storedValue || null;
 };
 
 const getAppParams = () => {
+  // Fitur untuk logout paksa via URL parameter ?clear_access_token=true
   if (getAppParamValue("clear_access_token") === "true") {
-    storage.removeItem("base44_access_token");
+    storage.removeItem("siba_access_token");
     storage.removeItem("token");
   }
+
   return {
+    // GANTI: Pastikan VITE_... di file .env kamu juga mulai disesuaikan namanya nanti
     appId: getAppParamValue("app_id", {
-      defaultValue: import.meta.env.VITE_BASE44_APP_ID,
+      defaultValue:
+        import.meta.env.VITE_SIBA_APP_ID || import.meta.env.VITE_BASE44_APP_ID,
     }),
     token: getAppParamValue("access_token", { removeFromUrl: true }),
-    fromUrl: getAppParamValue("from_url", {
-      defaultValue: window.location.href,
-    }),
-    functionsVersion: getAppParamValue("functions_version", {
-      defaultValue: import.meta.env.VITE_BASE44_FUNCTIONS_VERSION,
-    }),
     appBaseUrl: getAppParamValue("app_base_url", {
-      defaultValue: import.meta.env.VITE_BASE44_APP_BASE_URL,
+      defaultValue:
+        import.meta.env.VITE_SIBA_APP_BASE_URL ||
+        import.meta.env.VITE_BASE44_APP_BASE_URL,
     }),
   };
 };
