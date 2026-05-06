@@ -1,0 +1,96 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ── FONT ──────────────────────────────── */
+    --font-jakarta: "Plus Jakarta Sans", sans-serif;
+
+    /* ── BACKGROUND & FOREGROUND (Text) ────── */
+    --background: 223 40% 97%;
+    --foreground: 229 35% 16%;
+
+    /* ── CARD & POPOVER ────────────────────── */
+    --card: 0 0% 100%;
+    --card-foreground: 229 35% 16%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 229 35% 16%;
+
+    /* ── PRIMARY (Biru UYM Utama - #0D47A1) ── */
+    --primary: 216 85% 34%;
+    --primary-foreground: 0 0% 100%;
+
+    /* ── SECONDARY & MUTED ─────────────────── */
+    --secondary: 220 60% 93%;
+    --secondary-foreground: 220 20% 45%;
+    --muted: 220 60% 93%;
+    --muted-foreground: 220 20% 45%;
+
+    /* ── ACCENT (Kuning/Emas UYM - #F9A825) ── */
+    --accent: 37 95% 56%;
+    --accent-foreground: 229 35% 16%;
+
+    /* ── ERROR/DESTRUCTIVE (#B71C1C) ───────── */
+    --destructive: 359 73% 41%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* ── BORDERS & INPUTS (#D8E0F0) ────────── */
+    --border: 220 44% 89%;
+    --input: 220 44% 89%;
+    --ring: 218 85% 27%;
+
+    /* ── RADIUS ────────────────────────────── */
+    --radius: 0.375rem; /* rounded-md, pas untuk tema akademik yang tegas */
+
+    /* ── CUSTOM STATUS COLORS (SIAKAD) ─────── */
+    --success-bg: 135 46% 94%; /* #E8F5E9 */
+    --success-text: 125 49% 24%; /* #1B5E20 */
+    --warning-bg: 45 100% 94%; /* #FFF8E1 */
+    --warning-text: 21 100% 45%; /* #E65100 */
+    --danger-bg: 351 100% 96%; /* #FFEBEE */
+  }
+
+  .dark {
+    /* Untuk dark mode, warnanya dibalik agar tetap nyaman di mata */
+    --background: 229 35% 10%; /* Lebih gelap dari teks utama */
+    --foreground: 220 60% 93%; /* primaryLight sebagai teks putih */
+
+    --card: 229 35% 13%;
+    --card-foreground: 220 60% 93%;
+    --popover: 229 35% 13%;
+    --popover-foreground: 220 60% 93%;
+
+    /* Primary dicerahkan sedikit (#1565C0 / primaryMuted) untuk dark mode */
+    --primary: 212 80% 42%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 229 35% 20%;
+    --secondary-foreground: 220 60% 93%;
+    --muted: 229 35% 18%;
+    --muted-foreground: 220 20% 65%;
+
+    /* Aksen kuning dipertahankan tapi dioptimalkan kontrasnya */
+    --accent: 37 95% 56%;
+    --accent-foreground: 229 35% 10%;
+
+    --destructive: 359 73% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Border disesuaikan agar menyatu dengan background gelap */
+    --border: 229 35% 22%;
+    --input: 229 35% 22%;
+    --ring: 212 80% 42%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-jakarta;
+  }
+}
