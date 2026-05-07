@@ -1,5 +1,4 @@
 import React from "react";
-import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 export default function StatsCard({
@@ -9,42 +8,45 @@ export default function StatsCard({
   icon: Icon,
   color,
 }) {
-  // Menambahkan border tipis dan menggelapkan teks sedikit agar kontrasnya lebih baik di layar
   const colorMap = {
-    blue: "bg-blue-50 text-blue-700 border-blue-200",
-    green: "bg-emerald-50 text-emerald-700 border-emerald-200", // Menggunakan emerald agar hijaunya lebih formal
-    amber: "bg-amber-50 text-amber-700 border-amber-200",
-    red: "bg-red-50 text-red-700 border-red-200",
-    purple: "bg-purple-50 text-purple-700 border-purple-200",
+    blue: { bg: "bg-blue-50 dark:bg-blue-950/40", icon: "text-blue-500" },
+    green: {
+      bg: "bg-emerald-50 dark:bg-emerald-950/40",
+      icon: "text-emerald-500",
+    },
+    amber: { bg: "bg-amber-50 dark:bg-amber-950/40", icon: "text-amber-500" },
+    red: { bg: "bg-red-50 dark:bg-red-950/40", icon: "text-red-500" },
+    purple: {
+      bg: "bg-purple-50 dark:bg-purple-950/40",
+      icon: "text-purple-500",
+    },
   };
 
+  const c = colorMap[color] || colorMap.blue;
+
   return (
-    <Card className="p-5 rounded-md border border-border shadow-none bg-card transition-none">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider truncate">
-            {title}
-          </p>
-          <p className="text-2xl font-black mt-1 text-foreground tracking-tight">
+    <div className="bg-card rounded-md p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] flex flex-col justify-between min-h-[110px]">
+      <p className="text-xs text-muted-foreground">{title}</p>
+      <div className="flex items-end justify-between mt-2">
+        <div>
+          <p className="text-3xl font-semibold text-foreground leading-none">
             {value}
           </p>
           {subtitle && (
-            <p className="text-[10px] font-medium text-muted-foreground mt-1 uppercase tracking-wider truncate">
-              {subtitle}
-            </p>
+            <p className="text-[11px] text-muted-foreground mt-1">{subtitle}</p>
           )}
         </div>
         {Icon && (
           <div
             className={cn(
-              "p-2.5 rounded border flex items-center justify-center shrink-0",
-              colorMap[color] || colorMap.blue,
+              "w-8 h-8 rounded flex items-center justify-center shrink-0",
+              c.bg,
             )}
           >
-            <Icon className="w-5 h-5" />
+            <Icon className={cn("w-4 h-4", c.icon)} strokeWidth={1.8} />
           </div>
         )}
       </div>
-    </Card>
+    </div>
   );
 }

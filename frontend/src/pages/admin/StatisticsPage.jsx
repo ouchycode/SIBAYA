@@ -9,6 +9,7 @@ import {
   PieChart as PieChartIcon,
   BarChart3,
   AlertCircle,
+  AlertOctagon,
 } from "lucide-react";
 import {
   BarChart,
@@ -26,6 +27,7 @@ import {
 import { subDays, format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useEntityList } from "@/lib/hooks/useEntityList";
+import { cn } from "@/lib/utils";
 
 const COLORS = [
   "hsl(var(--primary))",
@@ -36,6 +38,9 @@ const COLORS = [
 ];
 
 export default function StatisticsPage() {
+  // ==========================================
+  // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
+  // ==========================================
   const { data: users = [] } = useEntityList("User");
   const { data: bookings = [] } = useEntityList("Booking");
   const { data: mappings = [] } = useEntityList("Mapping");
@@ -65,6 +70,7 @@ export default function StatisticsPage() {
         studentLastBooking[b.student_email] = b.date;
       }
     });
+
   const inactiveStudents = mappings.filter(
     (m) =>
       !studentLastBooking[m.student_email] ||
@@ -81,23 +87,29 @@ export default function StatisticsPage() {
       count,
     }))
     .sort((a, b) => b.count - a.count);
-  // ==========================================
 
+  // ==========================================
+  // PERUBAHAN PADA UI/UX (FRONTEND KAKU & LEGA)
+  // ==========================================
   return (
-    <div className="space-y-6">
-      {/* Header Halaman Formal */}
-      <div className="bg-card border border-border p-5 rounded-md shadow-sm">
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <PieChartIcon className="w-6 h-6 text-primary" />
-          Statistik Global Sistem
-        </h1>
-        <p className="text-sm font-medium text-muted-foreground mt-1">
-          Analisis data aktivitas akademik, status pengajuan, dan beban tenaga
-          pengajar.
-        </p>
+    <div className="space-y-6 max-w-7xl mx-auto pb-10">
+      {/* Header Halaman Formal & Lega */}
+      <div className="bg-card border border-primary/15 p-6 sm:p-8 rounded-sm shadow-sm relative overflow-hidden">
+        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" />
+        <div className="pl-2">
+          <h1 className="text-2xl font-black text-primary uppercase tracking-tight flex items-center gap-2.5">
+            <PieChartIcon className="w-7 h-7 shrink-0" />
+            Statistik Global Sistem
+          </h1>
+          <p className="text-sm font-medium text-muted-foreground mt-2 border-l-2 border-primary/30 pl-3">
+            Analisis data terpusat aktivitas akademik, distribusi pengajuan, dan
+            pemetaan beban tenaga pengajar.
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Grid Statistik Utama */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-6">
         <StatsCard
           title="Total Dosen Terdaftar"
           value={users.filter((u) => u.role === "dosen").length}
@@ -127,44 +139,50 @@ export default function StatisticsPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Chart Distribusi Status */}
-        <Card className="rounded-md border border-border shadow-none bg-card">
-          <CardHeader className="pb-3 border-b border-border bg-muted/30">
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <PieChartIcon className="w-4 h-4 text-primary" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        {/* Chart Distribusi Status - Kaku & Tabular */}
+        <Card className="rounded-sm border-2 border-primary/10 shadow-sm bg-card">
+          <CardHeader className="pb-4 pt-5 px-6 border-b-2 border-primary/10 bg-muted/40 border-l-4 border-l-primary">
+            <CardTitle className="text-sm font-black uppercase tracking-wider flex items-center gap-2 text-foreground">
+              <PieChartIcon className="w-5 h-5 text-primary" />
               Distribusi Status Pengajuan Bimbingan
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-6">
+          <CardContent className="p-6">
             {statusDist.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <PieChartIcon className="w-10 h-10 text-muted-foreground/30 mb-3" />
-                <p className="text-sm font-bold text-foreground">
-                  Belum Ada Data
+              <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-border rounded-sm bg-muted/10">
+                <div className="w-16 h-16 bg-muted border-2 border-border rounded-sm flex items-center justify-center mb-4">
+                  <PieChartIcon className="w-8 h-8 text-muted-foreground/40" />
+                </div>
+                <p className="text-sm font-black text-foreground uppercase tracking-widest">
+                  DATA BELUM TERSEDIA
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs font-bold text-muted-foreground mt-1.5 uppercase tracking-wider">
                   Belum ada pengajuan bimbingan yang tercatat di sistem.
                 </p>
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={320}>
                 <PieChart>
                   <Pie
                     data={statusDist}
                     cx="50%"
                     cy="50%"
-                    innerRadius={65}
-                    outerRadius={95}
+                    innerRadius={70}
+                    outerRadius={105}
                     dataKey="value"
                     stroke="hsl(var(--card))"
-                    strokeWidth={3}
+                    strokeWidth={4}
                     label={({ name, value }) => `${name}: ${value}`}
-                    labelLine={{ stroke: "hsl(var(--border))", strokeWidth: 1 }}
+                    labelLine={{
+                      stroke: "hsl(var(--border))",
+                      strokeWidth: 1.5,
+                    }}
                     style={{
                       fontSize: "11px",
-                      fontWeight: "bold",
+                      fontWeight: "900",
                       fill: "hsl(var(--foreground))",
+                      textTransform: "uppercase",
                     }}
                   >
                     {statusDist.map((_, i) => (
@@ -173,19 +191,27 @@ export default function StatisticsPage() {
                   </Pie>
                   <Legend
                     wrapperStyle={{
-                      fontSize: "12px",
-                      fontWeight: 600,
-                      paddingTop: "10px",
+                      fontSize: "11px",
+                      fontWeight: 900,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      paddingTop: "20px",
                     }}
                   />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
-                      borderRadius: "6px",
-                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "4px",
+                      border: "2px solid hsl(var(--primary)/0.2)",
                       boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                      fontSize: "12px",
-                      fontWeight: "bold",
+                      fontSize: "10px",
+                      fontWeight: "900",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                    itemStyle={{
+                      color: "hsl(var(--primary))",
+                      fontWeight: "900",
                     }}
                   />
                 </PieChart>
@@ -194,30 +220,32 @@ export default function StatisticsPage() {
           </CardContent>
         </Card>
 
-        {/* Chart Beban Dosen */}
-        <Card className="rounded-md border border-border shadow-none bg-card">
-          <CardHeader className="pb-3 border-b border-border bg-muted/30">
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-primary" />
-              Beban Bimbingan per Dosen
+        {/* Chart Beban Dosen - Kaku & Tabular */}
+        <Card className="rounded-sm border-2 border-primary/10 shadow-sm bg-card">
+          <CardHeader className="pb-4 pt-5 px-6 border-b-2 border-primary/10 bg-muted/40 border-l-4 border-l-primary">
+            <CardTitle className="text-sm font-black uppercase tracking-wider flex items-center gap-2 text-foreground">
+              <BarChart3 className="w-5 h-5 text-primary" />
+              Beban Bimbingan Per Dosen
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-6">
+          <CardContent className="p-6">
             {dosenChartData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <BarChart3 className="w-10 h-10 text-muted-foreground/30 mb-3" />
-                <p className="text-sm font-bold text-foreground">
-                  Data Belum Tersedia
+              <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-border rounded-sm bg-muted/10">
+                <div className="w-16 h-16 bg-muted border-2 border-border rounded-sm flex items-center justify-center mb-4">
+                  <BarChart3 className="w-8 h-8 text-muted-foreground/40" />
+                </div>
+                <p className="text-sm font-black text-foreground uppercase tracking-widest">
+                  DATA BELUM TERSEDIA
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs font-bold text-muted-foreground mt-1.5 uppercase tracking-wider">
                   Belum ada mapping mahasiswa ke dosen yang aktif.
                 </p>
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={320}>
                 <BarChart
                   data={dosenChartData}
-                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                  margin={{ top: 20, right: 20, left: -20, bottom: 0 }}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -227,9 +255,10 @@ export default function StatisticsPage() {
                   <XAxis
                     dataKey="name"
                     tick={{
-                      fontSize: 11,
+                      fontSize: 10,
                       fill: "hsl(var(--muted-foreground))",
-                      fontWeight: 600,
+                      fontWeight: 800,
+                      textTransform: "uppercase",
                     }}
                     axisLine={false}
                     tickLine={false}
@@ -239,30 +268,35 @@ export default function StatisticsPage() {
                     tick={{
                       fontSize: 11,
                       fill: "hsl(var(--muted-foreground))",
-                      fontWeight: 600,
+                      fontWeight: 800,
                     }}
                     axisLine={false}
                     tickLine={false}
                     allowDecimals={false}
                   />
                   <Tooltip
-                    cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
+                    cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }}
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
-                      borderRadius: "6px",
-                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "4px",
+                      border: "2px solid hsl(var(--primary)/0.2)",
                       boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                      fontSize: "12px",
-                      fontWeight: "bold",
+                      fontSize: "10px",
+                      fontWeight: "900",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
                     }}
-                    itemStyle={{ color: "hsl(var(--primary))" }}
+                    itemStyle={{
+                      color: "hsl(var(--primary))",
+                      fontWeight: "900",
+                    }}
                   />
                   <Bar
                     dataKey="count"
                     fill="hsl(var(--primary))"
-                    radius={[4, 4, 0, 0]}
-                    name="Mahasiswa"
-                    barSize={32}
+                    radius={[2, 2, 0, 0]}
+                    name="JML MAHASISWA"
+                    barSize={40}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -271,14 +305,14 @@ export default function StatisticsPage() {
         </Card>
       </div>
 
-      {/* Peringatan Mahasiswa Pasif */}
+      {/* Peringatan Mahasiswa Pasif - Dibuat Jauh Lebih Tegas & Kaku */}
       {inactiveStudents.length > 0 && (
-        <Card className="rounded-md border border-red-200 bg-card shadow-none">
-          <CardHeader className="pb-3 border-b border-red-100 bg-red-50/50">
-            <CardTitle className="text-sm font-bold flex items-center gap-2 text-red-700">
-              <AlertCircle className="w-5 h-5" />
-              Atensi Khusus: Mahasiswa Pasif (Lebih dari 30 Hari Tanpa Bimbingan
-              Selesai)
+        <Card className="rounded-sm border-2 border-destructive/20 shadow-sm bg-card mt-6">
+          <CardHeader className="pb-4 pt-5 px-6 border-b-2 border-destructive/10 bg-destructive/5 border-l-4 border-l-destructive">
+            <CardTitle className="text-sm font-black uppercase tracking-wider flex items-center gap-2 text-destructive">
+              <AlertOctagon className="w-5 h-5" />
+              ATENSI KHUSUS: MAHASISWA PASIF (LEBIH DARI 30 HARI TANPA SESI
+              SELESAI)
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -286,37 +320,39 @@ export default function StatisticsPage() {
               {inactiveStudents.map((m, index) => (
                 <div
                   key={m.id}
-                  className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-3 ${
-                    index !== inactiveStudents.length - 1
-                      ? "border-b border-border/60"
-                      : ""
-                  } hover:bg-muted/30 transition-none`}
+                  className={cn(
+                    "flex flex-col sm:flex-row sm:items-center justify-between p-5 lg:px-6 gap-4 transition-all bg-background hover:bg-muted/30 border-l-4 border-l-transparent hover:border-l-destructive/50",
+                    index !== inactiveStudents.length - 1 &&
+                      "border-b border-border/60",
+                  )}
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded bg-red-100 border border-red-200 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-black text-red-700">
-                        {(m.student_name || "?")[0].toUpperCase()}
+                  <div className="flex items-center gap-5 w-full sm:w-1/2">
+                    {/* Kotak Inisial Mahasiswa */}
+                    <div className="w-12 h-12 rounded-sm bg-destructive/10 border border-destructive/20 flex items-center justify-center shrink-0 shadow-inner">
+                      <span className="text-lg font-black text-destructive uppercase">
+                        {(m.student_name || "?")[0]}
                       </span>
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-foreground">
+                    <div className="min-w-0 space-y-1">
+                      <p className="text-sm font-black text-foreground uppercase tracking-wide truncate">
                         {m.student_name}
                       </p>
-                      <p className="text-xs font-medium text-muted-foreground mt-0.5">
-                        Dosen Pembimbing:{" "}
-                        <span className="font-bold text-foreground">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
+                        <BookOpen className="w-3.5 h-3.5" /> DOSEN PEMBIMBING:{" "}
+                        <span className="text-foreground">
                           {m.supervisor_name}
                         </span>
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center sm:justify-end gap-2 w-full sm:w-auto mt-2 sm:mt-0 pt-2 sm:pt-0 border-t border-border sm:border-0">
-                    <div className="bg-red-50 border border-red-200 px-3 py-1.5 rounded-sm">
-                      <p className="text-xs font-bold text-red-700 text-center sm:text-right">
+                  {/* Keterangan Terakhir Aktif */}
+                  <div className="flex items-center sm:justify-end gap-2 w-full sm:w-auto mt-2 sm:mt-0 pt-4 sm:pt-0 border-t border-dashed border-border sm:border-0">
+                    <div className="bg-destructive/10 border border-destructive/20 px-3.5 py-2 rounded-sm text-center sm:text-right w-full sm:w-auto">
+                      <p className="text-[10px] font-black text-destructive uppercase tracking-widest">
                         {studentLastBooking[m.student_email]
-                          ? `Terakhir Aktif: ${format(new Date(studentLastBooking[m.student_email]), "dd MMMM yyyy", { locale: localeId })}`
-                          : "Belum Pernah Melakukan Bimbingan"}
+                          ? `TERAKHIR AKTIF: ${format(new Date(studentLastBooking[m.student_email]), "dd MMM yyyy", { locale: localeId })}`
+                          : "BELUM PERNAH MELAKUKAN BIMBINGAN"}
                       </p>
                     </div>
                   </div>

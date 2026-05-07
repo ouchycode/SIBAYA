@@ -12,6 +12,7 @@ import {
   ClipboardList,
   ArrowRight,
   AlertTriangle,
+  User,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format, subDays } from "date-fns";
@@ -20,6 +21,9 @@ import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useEntityList } from "@/lib/hooks/useEntityList";
 
 export default function DosenDashboard() {
+  // ==========================================
+  // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
+  // ==========================================
   const { data: user } = useCurrentUser();
   const { data: mappingsAll = [] } = useEntityList("Mapping");
   const { data: bookingsAll = [] } = useEntityList("Booking");
@@ -55,29 +59,38 @@ export default function DosenDashboard() {
       new Date(studentLastBooking[m.student_email]) < thirtyDaysAgo,
   );
 
+  // ==========================================
+  // PERUBAHAN PADA UI/UX (FRONTEND KAKU & LEGA)
+  // ==========================================
   return (
-    <div className="space-y-6">
-      {/* Header Halaman Formal */}
-      <div className="bg-card border border-border p-5 rounded-md shadow-sm flex items-center gap-5">
-        <div className="hidden sm:flex w-16 h-16 rounded-full bg-accent text-accent-foreground items-center justify-center shrink-0 border-2 border-border overflow-hidden">
-          {user?.photo ? (
-            <img src={user.photo} alt="Avatar" className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-2xl font-black">
-              {(user?.full_name || "D")[0].toUpperCase()}
-            </span>
-          )}
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard Dosen</h1>
-          <p className="text-sm font-medium text-muted-foreground mt-1">
-            Selamat datang,{" "}
-            <span className="text-foreground">{user?.full_name || "Dosen"}</span>
+    <div className="space-y-6 max-w-7xl mx-auto pb-10">
+      {/* Banner Selamat Datang - Identitas Dosen Formal */}
+      <div className="bg-card border-2 border-primary/10 rounded-sm shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 relative overflow-hidden">
+        {/* Ornamen aksen kaku di kanan */}
+        <div className="absolute right-0 top-0 bottom-0 w-2 bg-primary/20" />
+
+        <div className="flex-1 space-y-1.5">
+          <p className="text-[10px] font-black uppercase tracking-widest text-primary/70">
+            Portal Dosen Pembimbing
           </p>
+          <h1 className="text-xl font-black text-foreground uppercase tracking-tight">
+            {user?.full_name || "Dosen Terdaftar"}
+          </h1>
+          <div className="flex flex-wrap items-center gap-3 mt-2 pt-2 border-t border-border">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase">
+              <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-sm border border-primary/20 font-mono font-bold tracking-widest">
+                {user?.nip || "NIP TIDAK TERSEDIA"}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+              <Users className="w-3.5 h-3.5" />
+              <span>TOTAL {mappings.length} MAHASISWA BIMBINGAN AKTIF</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Stats Grid - Memanfaatkan komponen StatsCard bawaan */}
+      {/* Stats Grid - Komponen StatsCard dibungkus agar solid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard
           title="Mahasiswa Bimbingan"
@@ -106,53 +119,60 @@ export default function DosenDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Panel Permintaan Masuk */}
-        <Card className="rounded-md shadow-none border-border">
-          <CardHeader className="pb-3 border-b border-border">
+        {/* Panel Permintaan Masuk - Kaku & Administratif */}
+        <Card className="rounded-sm shadow-sm border-primary/20 bg-card">
+          <CardHeader className="pb-3 border-b border-primary/10 border-l-4 border-l-primary bg-muted/30 rounded-t-sm">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <ClipboardList className="w-5 h-5 text-primary" />
+              <CardTitle className="text-sm font-black uppercase tracking-wide flex items-center gap-2 text-foreground">
+                <ClipboardList className="w-4 h-4 text-primary" />
                 Permintaan Masuk
               </CardTitle>
               <Link to="/requests">
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  className="text-xs font-bold gap-1 rounded-sm hover:bg-muted"
+                  className="text-[10px] font-bold uppercase tracking-wider h-7 px-3 rounded-sm border-primary/20 hover:bg-primary/10 hover:text-primary shadow-none"
                 >
-                  Lihat Semua <ArrowRight className="w-3 h-3" />
+                  Lihat Semua <ArrowRight className="w-3 h-3 ml-1" />
                 </Button>
               </Link>
             </div>
           </CardHeader>
-          <CardContent className="pt-4">
+          <CardContent className="p-5">
             {pendingRequests.length === 0 ? (
               <EmptyState
-                title="Tidak ada permintaan"
-                description="Semua permintaan pengajuan jadwal bimbingan sudah diproses."
+                title="TIDAK ADA PERMINTAAN"
+                description="Semua permintaan pengajuan jadwal bimbingan mahasiswa sudah diproses."
               />
             ) : (
               <div className="space-y-3">
                 {pendingRequests.slice(0, 5).map((b) => (
                   <div
                     key={b.id}
-                    className="flex items-center gap-4 p-3 rounded-md bg-card border border-border"
+                    className="flex flex-col sm:flex-row sm:items-center gap-4 p-3.5 rounded-sm bg-background border border-border hover:border-primary/30 transition-colors"
                   >
-                    <div className="w-10 h-10 rounded bg-muted flex items-center justify-center shrink-0 border border-border">
-                      <Clock className="w-5 h-5 text-muted-foreground" />
+                    {/* Kotak Ikon Formal */}
+                    <div className="w-10 h-10 rounded-sm bg-muted flex items-center justify-center shrink-0 border border-border">
+                      <Clock className="w-4 h-4 text-muted-foreground" />
                     </div>
+
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-foreground truncate">
+                      <p className="text-sm font-bold text-foreground uppercase tracking-wide truncate">
                         {b.student_name}
                       </p>
-                      <p className="text-xs font-medium text-muted-foreground mt-0.5">
-                        {format(new Date(b.date), "dd MMM yyyy", {
-                          locale: localeId,
-                        })}{" "}
-                        • {b.start_time} WIB
-                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase bg-muted/50 px-1.5 py-0.5 rounded-sm border border-border">
+                          {format(new Date(b.date), "dd MMM yyyy", {
+                            locale: localeId,
+                          })}
+                        </span>
+                        <span className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-sm border border-primary/20">
+                          {b.start_time} WIB
+                        </span>
+                      </div>
                     </div>
-                    <div>
+
+                    <div className="pt-2 sm:pt-0 border-t border-border sm:border-t-0 flex shrink-0">
                       <StatusBadge status="pending" />
                     </div>
                   </div>
@@ -162,40 +182,55 @@ export default function DosenDashboard() {
           </CardContent>
         </Card>
 
-        {/* Panel Mahasiswa Pasif (Peringatan) */}
-        <Card className="rounded-md shadow-none border-border">
-          <CardHeader className="pb-3 border-b border-border">
-            <CardTitle className="text-base font-bold flex items-center gap-2 text-destructive">
-              <AlertTriangle className="w-5 h-5" />
+        {/* Panel Mahasiswa Pasif (Peringatan) - Kaku & Peringatan Merah */}
+        <Card className="rounded-sm shadow-sm border-destructive/20 bg-card">
+          <CardHeader className="pb-3 border-b border-destructive/10 border-l-4 border-l-destructive bg-destructive/5 rounded-t-sm">
+            <CardTitle className="text-sm font-black uppercase tracking-wide flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-4 h-4" />
               Peringatan Mahasiswa Pasif
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-4">
+          <CardContent className="p-5">
             {inactiveStudents.length === 0 ? (
               <EmptyState
-                title="Status Mahasiswa Terkendali"
-                description="Tidak ada mahasiswa bimbingan yang pasif lebih dari 30 hari."
+                title="STATUS TERKENDALI"
+                description="Tidak ada mahasiswa bimbingan yang tercatat pasif lebih dari 30 hari."
               />
             ) : (
               <div className="space-y-3">
                 {inactiveStudents.slice(0, 5).map((m) => (
                   <div
                     key={m.id}
-                    className="flex items-center gap-4 p-3 rounded-md bg-red-50/50 border border-red-100"
+                    className="flex flex-col sm:flex-row sm:items-center gap-4 p-3.5 rounded-sm bg-destructive/5 border border-destructive/10 hover:border-destructive/30 transition-colors"
                   >
-                    <div className="w-10 h-10 rounded bg-red-100 border border-red-200 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-black text-red-700">
-                        {(m.student_name || "?")[0].toUpperCase()}
+                    {/* Kotak Inisial Merah */}
+                    <div className="w-10 h-10 rounded-sm bg-destructive/10 border border-destructive/20 flex items-center justify-center shrink-0">
+                      <span className="text-sm font-black text-destructive uppercase">
+                        {(m.student_name || "?")[0]}
                       </span>
                     </div>
+
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-red-900 truncate">
+                      <p className="text-sm font-bold text-destructive/90 uppercase tracking-wide truncate">
                         {m.student_name}
                       </p>
-                      <p className="text-xs font-medium text-red-700 mt-0.5">
-                        {studentLastBooking[m.student_email]
-                          ? `Terakhir Bimbingan: ${format(new Date(studentLastBooking[m.student_email]), "dd MMM yyyy", { locale: localeId })}`
-                          : "Belum pernah bimbingan sama sekali"}
+                      <p className="text-[10px] font-bold text-destructive/70 uppercase tracking-widest mt-1.5">
+                        {studentLastBooking[m.student_email] ? (
+                          <>
+                            <span className="mr-1">Bimbingan Terakhir:</span>
+                            <span className="bg-destructive/10 px-1.5 py-0.5 rounded-sm border border-destructive/20">
+                              {format(
+                                new Date(studentLastBooking[m.student_email]),
+                                "dd MMM yyyy",
+                                { locale: localeId },
+                              )}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="bg-destructive/10 px-1.5 py-0.5 rounded-sm border border-destructive/20">
+                            BELUM PERNAH BIMBINGAN
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>

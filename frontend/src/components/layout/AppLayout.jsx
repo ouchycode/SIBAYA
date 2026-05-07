@@ -35,19 +35,21 @@ export default function AppLayout({ user }) {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-background selection:bg-primary/30 selection:text-primary-foreground">
+    <div className="min-h-screen bg-muted/30 selection:bg-primary selection:text-primary-foreground">
+      {/* Overlay Mobile */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 bg-sidebar-background/40 backdrop-blur-sm z-40 lg:hidden transition-all duration-300"
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
           onClick={() => setMobileOpen(false)}
           aria-hidden="true"
         />
       )}
 
+      {/* Sidebar */}
       <div
         className={cn(
           "hidden lg:block z-50",
-          mobileOpen && "!block fixed inset-y-0 left-0",
+          mobileOpen && "!block fixed inset-y-0 left-0 shadow-xl",
         )}
       >
         <Sidebar
@@ -57,10 +59,11 @@ export default function AppLayout({ user }) {
         />
       </div>
 
+      {/* Main */}
       <div
         className={cn(
           "transition-all duration-300 flex flex-col min-h-screen",
-          collapsed ? "lg:ml-[72px]" : "lg:ml-64",
+          collapsed ? "lg:ml-[64px]" : "lg:ml-[240px]",
         )}
       >
         <TopBar
@@ -69,7 +72,7 @@ export default function AppLayout({ user }) {
           title={title}
         />
 
-        <main className="flex-1 p-4 md:p-6 lg:p-8 w-full max-w-[1600px] mx-auto animate-in fade-in duration-500">
+        <main className="flex-1 p-4 sm:p-5 lg:p-6 w-full max-w-[1400px] mx-auto animate-in fade-in duration-200">
           <Outlet />
         </main>
 

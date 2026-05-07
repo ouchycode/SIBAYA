@@ -8,6 +8,7 @@ import {
   CalendarDays,
   BarChart3,
   ShieldCheck,
+  AlertCircle,
 } from "lucide-react";
 import {
   BarChart,
@@ -22,6 +23,9 @@ import { useEntityList } from "@/lib/hooks/useEntityList";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 
 export default function AdminDashboard() {
+  // ==========================================
+  // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
+  // ==========================================
   const { data: user } = useCurrentUser();
   const { data: users = [] } = useEntityList("User");
   const { data: mappings = [] } = useEntityList("Mapping");
@@ -39,41 +43,59 @@ export default function AdminDashboard() {
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count);
 
+  // ==========================================
+  // PERUBAHAN PADA UI/UX (FRONTEND KAKU & LEGA)
+  // ==========================================
   return (
-    <div className="space-y-6">
-      {/* Header Halaman Formal */}
-      <div className="bg-card border border-border p-5 rounded-md shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-5">
-          <div className="hidden sm:flex w-16 h-16 rounded-full bg-accent text-accent-foreground items-center justify-center shrink-0 border-2 border-border overflow-hidden">
-            {user?.photo ? (
-              <img src={user.photo} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-2xl font-black">
-                {(user?.full_name || "A")[0].toUpperCase()}
-              </span>
-            )}
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <ShieldCheck className="w-6 h-6 text-primary" />
+    <div className="space-y-6 max-w-7xl mx-auto pb-10">
+      {/* Header Halaman Formal & Lega */}
+      <div className="bg-card border-2 border-primary/10 p-6 sm:p-8 rounded-sm shadow-sm flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" />
+
+        <div className="flex items-center gap-5 pl-2">
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-black uppercase tracking-widest text-primary/70">
+              Portal Sistem Utama
+            </p>
+            <h1 className="text-2xl font-black text-foreground uppercase tracking-tight flex items-center gap-2">
+              <ShieldCheck className="w-7 h-7 text-primary shrink-0" />
               Dashboard Administrator
             </h1>
-            <p className="text-sm font-medium text-muted-foreground mt-1">
-              Selamat datang, <span className="text-foreground">{user?.full_name || "Admin"}</span>
-            </p>
+            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                SELAMAT DATANG,{" "}
+                <span className="text-foreground font-black">
+                  {user?.full_name || "ADMIN TERDAFTAR"}
+                </span>
+              </p>
+            </div>
           </div>
         </div>
-        <div className="bg-muted/50 border border-border px-3 py-2 rounded-sm text-right shrink-0">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+
+        {/* Indikator Periode Akademik - Kotak Kaku */}
+        <div className="bg-background border-2 border-primary/10 p-4 rounded-sm shrink-0 shadow-sm flex flex-col items-start lg:items-end min-w-[220px]">
+          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">
             Periode Akademik
           </p>
-          <p className="text-sm font-bold text-primary">
-            {activePeriod ? activePeriod.name : "Tidak ada periode aktif"}
-          </p>
+          {activePeriod ? (
+            <div className="bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-sm">
+              <p className="text-sm font-black text-primary uppercase tracking-widest">
+                {activePeriod.name}
+              </p>
+            </div>
+          ) : (
+            <div className="bg-destructive/10 border border-destructive/20 px-3 py-1.5 rounded-sm flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-destructive" />
+              <p className="text-xs font-black text-destructive uppercase tracking-widest">
+                TIDAK ADA PERIODE AKTIF
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Grid Statistik - Wrapper diberikan jarak */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-6">
         <StatsCard
           title="Total Dosen"
           value={users.filter((u) => u.role === "dosen").length}
@@ -100,29 +122,32 @@ export default function AdminDashboard() {
         />
       </div>
 
-      <Card className="rounded-md border border-border shadow-none bg-card">
-        <CardHeader className="pb-3 border-b border-border bg-muted/30">
-          <CardTitle className="text-sm font-bold flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-primary" />
+      {/* Grafik Beban Dosen */}
+      <Card className="rounded-sm border-2 border-primary/10 shadow-sm bg-card mt-6">
+        <CardHeader className="pb-4 pt-5 px-6 border-b-2 border-primary/10 bg-muted/40 border-l-4 border-l-primary">
+          <CardTitle className="text-sm font-black uppercase tracking-wider flex items-center gap-2 text-foreground">
+            <BarChart3 className="w-5 h-5 text-primary" />
             Distribusi Beban Bimbingan Dosen
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-6">
+        <CardContent className="p-6">
           {chartData.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 text-center">
-              <BarChart3 className="w-10 h-10 text-muted-foreground/30 mb-3" />
-              <p className="text-sm font-bold text-foreground">
-                Data Belum Tersedia
+            <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-border rounded-sm bg-muted/10">
+              <div className="w-16 h-16 bg-muted border-2 border-border rounded-sm flex items-center justify-center mb-4">
+                <BarChart3 className="w-8 h-8 text-muted-foreground/40" />
+              </div>
+              <p className="text-sm font-black text-foreground uppercase tracking-widest">
+                DATA BELUM TERSEDIA
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Belum ada mapping mahasiswa ke dosen yang aktif.
+              <p className="text-xs font-bold text-muted-foreground mt-1.5 uppercase tracking-wider">
+                Belum ada pemetaan (mapping) mahasiswa ke dosen yang aktif.
               </p>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={320}>
+            <ResponsiveContainer width="100%" height={360}>
               <BarChart
                 data={chartData}
-                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                margin={{ top: 20, right: 20, left: -20, bottom: 0 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -132,9 +157,9 @@ export default function AdminDashboard() {
                 <XAxis
                   dataKey="name"
                   tick={{
-                    fontSize: 11,
+                    fontSize: 10,
                     fill: "hsl(var(--muted-foreground))",
-                    fontWeight: 600,
+                    fontWeight: 800,
                   }}
                   axisLine={false}
                   tickLine={false}
@@ -144,30 +169,35 @@ export default function AdminDashboard() {
                   tick={{
                     fontSize: 11,
                     fill: "hsl(var(--muted-foreground))",
-                    fontWeight: 600,
+                    fontWeight: 800,
                   }}
                   axisLine={false}
                   tickLine={false}
                   allowDecimals={false}
                 />
                 <Tooltip
-                  cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
+                  cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }}
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
-                    borderRadius: "6px",
-                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "4px", // rounded-sm
+                    border: "2px solid hsl(var(--primary)/0.2)",
                     boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                    fontSize: "12px",
-                    fontWeight: "bold",
+                    fontSize: "10px",
+                    fontWeight: "900",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
                   }}
-                  itemStyle={{ color: "hsl(var(--primary))" }}
+                  itemStyle={{
+                    color: "hsl(var(--primary))",
+                    fontWeight: "900",
+                  }}
                 />
                 <Bar
                   dataKey="count"
                   fill="hsl(var(--primary))"
-                  radius={[4, 4, 0, 0]}
-                  name="Jumlah Mahasiswa"
-                  barSize={40}
+                  radius={[2, 2, 0, 0]}
+                  name="Total Mahasiswa"
+                  barSize={48}
                 />
               </BarChart>
             </ResponsiveContainer>

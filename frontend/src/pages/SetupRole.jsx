@@ -19,7 +19,7 @@ export default function SetupRole() {
           Akses Tertunda
         </h1>
         <h2 className="text-sm font-bold text-primary mt-1 uppercase tracking-widest">
-          Sistem Bimbingan SIBAYA
+          Sistem Informasi Bimbingan SIBAYA
         </h2>
 
         <div className="h-px w-12 bg-border mx-auto my-5" />

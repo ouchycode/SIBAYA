@@ -2,8 +2,6 @@ import React from "react";
 import StatsCard from "@/components/shared/StatsCard";
 import StatusBadge from "@/components/shared/StatusBadge";
 import EmptyState from "@/components/shared/EmptyState";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   CalendarDays,
   ClipboardList,
@@ -11,10 +9,11 @@ import {
   Clock,
   BookOpen,
   ArrowRight,
+  User,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format, startOfDay, parseISO } from "date-fns";
-import { id as localeId } from "date-fns/locale"; // Import locale Indonesia
+import { id as localeId } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useEntityList } from "@/lib/hooks/useEntityList";
 
@@ -34,60 +33,54 @@ export default function MahasiswaDashboard() {
     (b) => b.status === "completed",
   ).length;
 
-  // PERBAIKAN LOGIKA: Menggunakan startOfDay agar jadwal hari ini tidak hilang
   const today = startOfDay(new Date());
 
   const upcomingBookings = bookings
     .filter(
       (b) => b.status === "approved" && startOfDay(parseISO(b.date)) >= today,
     )
-    .sort((a, b) => new Date(a.date) - new Date(b.date)) // Diurutkan dari yang paling dekat
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
     .slice(0, 3);
 
   return (
-    <div className="space-y-6">
-      {/* Banner Selamat Datang - Solid dan Formal */}
-      <div className="bg-card border border-border p-6 rounded-md shadow-sm flex items-center gap-5">
-        <div className="hidden sm:flex w-16 h-16 rounded-full bg-accent text-accent-foreground items-center justify-center shrink-0 border-2 border-border overflow-hidden">
-          {user?.photo ? (
-            <img src={user.photo} alt="Avatar" className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-2xl font-black">
-              {(user?.full_name || "M")[0].toUpperCase()}
-            </span>
-          )}
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            Selamat Datang, {user?.full_name || "Mahasiswa"}
-          </h1>
-          <div className="mt-3 inline-flex items-center gap-2 px-3 py-2 bg-primary/5 rounded-sm border border-primary/20 text-sm font-bold text-primary">
-            <BookOpen className="w-4 h-4" />
-            <span>
-              {supervisor
-                ? `Dosen Pembimbing: ${supervisor.supervisor_name}`
-                : "Belum ada alokasi dosen pembimbing"}
-            </span>
-          </div>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="bg-card rounded-md p-6 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+        <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest mb-1">
+          Portal Mahasiswa
+        </p>
+        <h1 className="text-lg font-semibold text-foreground">
+          {user?.full_name || "Mahasiswa Terdaftar"}
+        </h1>
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
+          <span className="font-mono text-xs bg-muted text-foreground px-2 py-0.5 rounded">
+            {user?.nim || "—"}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <User className="w-3.5 h-3.5" />
+            {supervisor
+              ? supervisor.supervisor_name
+              : "Belum ada dosen pembimbing"}
+          </span>
         </div>
       </div>
 
-      {/* Stats - Memanfaatkan komponen StatsCard */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatsCard
-          title="Menunggu Persetujuan"
+          title="Menunggu"
           value={pendingCount}
           icon={Clock}
           color="amber"
         />
         <StatsCard
-          title="Bimbingan Disetujui"
+          title="Disetujui"
           value={approvedCount}
           icon={CheckCircle}
           color="green"
         />
         <StatsCard
-          title="Bimbingan Selesai"
+          title="Selesai"
           value={completedCount}
           icon={ClipboardList}
           color="blue"
@@ -100,109 +93,112 @@ export default function MahasiswaDashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Jadwal Mendatang */}
-        <Card className="lg:col-span-2 rounded-md shadow-none border-border bg-card">
-          <CardHeader className="pb-3 border-b border-border bg-muted/30">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <CalendarDays className="w-4 h-4 text-primary" />
-                Jadwal Bimbingan Mendatang
-              </CardTitle>
-              <Link to="/my-bookings">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs font-bold gap-1 hover:bg-muted rounded-sm h-8 px-2"
-                >
-                  Lihat Semua <ArrowRight className="w-3 h-3" />
-                </Button>
-              </Link>
+        <div className="lg:col-span-2 bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold text-foreground">
+                Jadwal Mendatang
+              </h2>
             </div>
-          </CardHeader>
-          <CardContent className="pt-4">
+            <Link
+              to="/my-bookings"
+              className="flex items-center gap-1 text-xs text-primary font-medium hover:underline"
+            >
+              Lihat semua <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="divide-y divide-border/40">
             {upcomingBookings.length === 0 ? (
               <EmptyState
                 title="Tidak ada jadwal mendatang"
-                description="Anda belum memiliki jadwal bimbingan yang telah disetujui. Silakan ajukan jadwal baru."
+                description="Belum ada jadwal bimbingan yang disetujui."
               />
             ) : (
-              <div className="space-y-3">
-                {upcomingBookings.map((b) => (
-                  <div
-                    key={b.id}
-                    className="flex flex-col sm:flex-row sm:items-center gap-4 p-3.5 rounded-md bg-background border border-border"
-                  >
-                    <div className="w-10 h-10 rounded bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
-                      <CalendarDays className="w-5 h-5 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-foreground">
-                        {format(parseISO(b.date), "EEEE, dd MMMM yyyy", {
-                          locale: localeId,
-                        })}
-                      </p>
-                      <p className="text-xs text-muted-foreground font-semibold mt-1 flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5" />
-                        {b.start_time} - {b.end_time} WIB
-                        <span className="mx-1">•</span>
-                        {b.mode === "online"
-                          ? "Online (Daring)"
-                          : `Offline: ${b.location}`}
-                      </p>
-                    </div>
-                    <div className="pt-2 sm:pt-0 border-t border-border sm:border-0">
-                      <StatusBadge status={b.status} />
-                    </div>
+              upcomingBookings.map((b) => (
+                <div
+                  key={b.id}
+                  className="flex items-center gap-4 px-5 py-5 hover:bg-muted/40 transition-colors"
+                >
+                  <div className="flex-shrink-0 w-10 text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide leading-none">
+                      {format(parseISO(b.date), "MMM", { locale: localeId })}
+                    </p>
+                    <p className="text-xl font-semibold text-foreground leading-tight">
+                      {format(parseISO(b.date), "dd")}
+                    </p>
                   </div>
-                ))}
-              </div>
+
+                  <div className="w-px h-8 bg-border/50 flex-shrink-0" />
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {format(parseISO(b.date), "EEEE, dd MMMM yyyy", {
+                        locale: localeId,
+                      })}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {b.start_time} – {b.end_time} ·{" "}
+                      {b.mode === "online" ? "Online" : b.location}
+                    </p>
+                  </div>
+
+                  <div className="flex-shrink-0">
+                    <StatusBadge status={b.status} />
+                  </div>
+                </div>
+              ))
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Aksi Cepat */}
-        <Card className="rounded-md shadow-none border-border bg-card h-fit">
-          <CardHeader className="pb-3 border-b border-border bg-muted/30">
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <ClipboardList className="w-4 h-4 text-primary" />
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden h-fit">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-border/50">
+            <ClipboardList className="w-4 h-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold text-foreground">
               Aksi Cepat
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4 space-y-3">
+            </h2>
+          </div>
+
+          <div className="p-4 space-y-1.5">
             <Link to="/booking" className="block">
-              <div className="flex items-center gap-3 p-3.5 rounded-md border border-border hover:border-primary/40 bg-background transition-none">
-                <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center shrink-0">
+              <div className="flex items-center gap-3 p-4 rounded hover:bg-muted/60 transition-colors group">
+                <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center flex-shrink-0">
                   <CalendarDays className="w-4 h-4 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-foreground">
-                    Ajukan Booking
+                  <p className="text-sm font-medium text-foreground">
+                    Ajukan Bimbingan
                   </p>
-                  <p className="text-[11px] font-medium text-muted-foreground mt-0.5">
-                    Pilih slot waktu dosen
+                  <p className="text-xs text-muted-foreground">
+                    Buat jadwal baru
                   </p>
                 </div>
               </div>
             </Link>
 
             <Link to="/logbook" className="block">
-              <div className="flex items-center gap-3 p-3.5 rounded-md border border-border hover:border-primary/40 bg-background transition-none">
-                <div className="w-8 h-8 rounded bg-accent/10 flex items-center justify-center shrink-0">
+              <div className="flex items-center gap-3 p-4 rounded hover:bg-muted/60 transition-colors group">
+                <div className="w-8 h-8 rounded bg-accent/20 flex items-center justify-center flex-shrink-0">
                   <BookOpen className="w-4 h-4 text-accent-foreground" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-foreground">
-                    Lihat Logbook
+                  <p className="text-sm font-medium text-foreground">
+                    Isi Logbook
                   </p>
-                  <p className="text-[11px] font-medium text-muted-foreground mt-0.5">
-                    Catatan dan progres
+                  <p className="text-xs text-muted-foreground">
+                    Catat progres harian
                   </p>
                 </div>
               </div>
             </Link>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

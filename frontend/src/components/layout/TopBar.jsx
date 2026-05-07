@@ -52,20 +52,17 @@ export default function TopBar({ user, onToggleSidebar, title }) {
       queryClient.invalidateQueries({ queryKey: ["notifications"] }),
   });
 
-  // Warna semantik standar tanpa efek transisi aneh-aneh
   const typeColors = {
-    booking_new: "bg-blue-100 text-blue-800 border-blue-200",
-    booking_approved: "bg-green-100 text-green-800 border-green-200",
-    booking_rejected: "bg-red-100 text-red-800 border-red-200",
-    booking_cancelled: "bg-amber-100 text-amber-800 border-amber-200",
-    reminder: "bg-purple-100 text-purple-800 border-purple-200",
+    booking_new: "bg-blue-50 text-blue-700 border-blue-200",
+    booking_approved: "bg-green-50 text-green-700 border-green-200",
+    booking_rejected: "bg-red-50 text-red-700 border-red-200",
+    booking_cancelled: "bg-amber-50 text-amber-700 border-amber-200",
+    reminder: "bg-purple-50 text-purple-700 border-purple-200",
     system: "bg-muted text-muted-foreground border-border",
   };
 
   const handleNotificationClick = (n) => {
-    if (!n.is_read) {
-      markRead.mutate(n.id);
-    }
+    if (!n.is_read) markRead.mutate(n.id);
     if (n.link) {
       navigate(n.link);
       setOpen(false);
@@ -73,62 +70,75 @@ export default function TopBar({ user, onToggleSidebar, title }) {
   };
 
   return (
-    // Dibuat flat dengan border solid di bawah, tanpa shadow berlebihan
-    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 sticky top-0 z-30">
-      <div className="flex items-center gap-4">
+    <header className="h-14 bg-card border-b border-border/50 flex items-center justify-between px-5 sticky top-0 z-30 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+      {/* Kiri: toggle + judul */}
+      <div className="flex items-center gap-3">
         <button
           onClick={onToggleSidebar}
-          className="p-2 rounded-md hover:bg-muted text-foreground/80 hover:text-foreground lg:hidden"
+          className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors lg:hidden"
         >
           <Menu className="w-5 h-5" />
         </button>
-        <h2 className="text-lg font-bold text-foreground">{title}</h2>
+        <h2 className="text-sm font-semibold text-foreground tracking-wide">
+          {title}
+        </h2>
       </div>
 
-      <div className="flex items-center gap-3">
+      {/* Kanan: notifikasi */}
+      <div className="flex items-center gap-2">
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              className="relative rounded-md hover:bg-muted"
+              className="relative h-8 w-8 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
             >
-              <Bell className="w-5 h-5 text-foreground/80" />
+              <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                // Badge notifikasi tetap membulat (standar UI UX global untuk notifikasi)
-                <span className="absolute top-1 right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full text-[9px] font-bold flex items-center justify-center border border-card">
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-destructive text-destructive-foreground rounded-full text-[9px] font-bold flex items-center justify-center px-1 leading-none">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
             </Button>
           </PopoverTrigger>
 
-          {/* Popover dibuat solid dengan border-md */}
           <PopoverContent
-            className="w-80 p-0 rounded-md border-border shadow-md"
+            className="w-80 p-0 rounded-md border-0 shadow-[0_4px_20px_rgba(0,0,0,0.1)] bg-card overflow-hidden"
             align="end"
           >
-            <div className="p-3 border-b border-border bg-muted/30 flex items-center justify-between">
-              <h3 className="font-bold text-sm text-foreground">
-                Notifikasi Sistem
-              </h3>
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+              <div className="flex items-center gap-2">
+                <Bell className="w-3.5 h-3.5 text-muted-foreground" />
+                <h3 className="text-xs font-semibold text-foreground">
+                  Notifikasi
+                </h3>
+                {unreadCount > 0 && (
+                  <span className="text-[10px] bg-primary/10 text-primary font-semibold px-1.5 py-0.5 rounded-full">
+                    {unreadCount} baru
+                  </span>
+                )}
+              </div>
               {unreadCount > 0 && (
                 <button
                   onClick={() => markAllRead.mutate()}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+                  className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 font-medium transition-colors"
                 >
                   <CheckCheck className="w-3 h-3" />
-                  Tandai Dibaca
+                  Tandai semua
                 </button>
               )}
             </div>
 
-            <div className="max-h-80 overflow-y-auto custom-scrollbar">
+            {/* List */}
+            <div className="max-h-[340px] overflow-y-auto">
               {notifications.length === 0 ? (
-                <div className="p-8 flex flex-col items-center justify-center text-center">
-                  <Bell className="w-8 h-8 text-muted-foreground/30 mb-2" />
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Belum ada pemberitahuan
+                <div className="py-12 flex flex-col items-center justify-center text-center">
+                  <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center mb-3">
+                    <Bell className="w-4 h-4 text-muted-foreground/50" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Tidak ada notifikasi
                   </p>
                 </div>
               ) : (
@@ -137,43 +147,44 @@ export default function TopBar({ user, onToggleSidebar, title }) {
                     key={n.id}
                     onClick={() => handleNotificationClick(n)}
                     className={cn(
-                      "p-3 border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/50 relative",
-                      !n.is_read ? "bg-primary/5" : "opacity-80",
+                      "flex gap-3 px-4 py-3.5 border-b border-border/40 last:border-0 cursor-pointer transition-colors relative",
+                      !n.is_read
+                        ? "bg-primary/[0.03] hover:bg-primary/[0.06]"
+                        : "hover:bg-muted/50",
                     )}
                   >
-                    {/* Indikator Belum Dibaca - Simple solid line */}
+                    {/* Indikator unread */}
                     {!n.is_read && (
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
+                      <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-primary rounded-r" />
                     )}
 
-                    <div className="flex items-start justify-between gap-2 pl-1">
-                      <span
-                        className={cn(
-                          "text-[9px] shrink-0 inline-flex items-center rounded-sm px-1.5 py-0.5 font-bold uppercase tracking-wider border",
-                          typeColors[n.type] || typeColors.system,
-                        )}
-                      >
-                        {n.type?.replace(/_/g, " ")}
-                      </span>
-                      {/* Menggunakan format bahasa Indonesia */}
-                      <span className="text-[10px] font-mono text-muted-foreground whitespace-nowrap">
-                        {n.created_date &&
-                          format(new Date(n.created_date), "dd MMM yy, HH:mm", {
-                            locale: localeId,
-                          })}
-                      </span>
-                    </div>
+                    <div className="flex-1 min-w-0 pl-1">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span
+                          className={cn(
+                            "text-[10px] inline-flex items-center px-1.5 py-0.5 rounded border font-medium",
+                            typeColors[n.type] || typeColors.system,
+                          )}
+                        >
+                          {n.type?.replace(/_/g, " ")}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {n.created_date &&
+                            format(new Date(n.created_date), "dd MMM, HH:mm", {
+                              locale: localeId,
+                            })}
+                        </span>
+                      </div>
 
-                    <div className="mt-2 pl-1">
                       <p
                         className={cn(
-                          "text-sm font-bold",
-                          !n.is_read ? "text-foreground" : "text-foreground/80",
+                          "text-xs font-semibold leading-snug",
+                          !n.is_read ? "text-foreground" : "text-foreground/75",
                         )}
                       >
                         {n.title}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed line-clamp-2">
+                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed line-clamp-2">
                         {n.message}
                       </p>
                     </div>
@@ -183,27 +194,6 @@ export default function TopBar({ user, onToggleSidebar, title }) {
             </div>
           </PopoverContent>
         </Popover>
-
-        {/* User Avatar in TopBar */}
-        <div className="hidden md:flex items-center gap-3 pl-3 border-l border-border">
-          <div className="flex flex-col items-end">
-            <span className="text-sm font-bold text-foreground">
-              {user?.full_name || "User"}
-            </span>
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {user?.role === 'dosen' ? 'Dosen' : user?.role === 'admin' ? 'Administrator' : 'Mahasiswa'}
-            </span>
-          </div>
-          <div className="w-9 h-9 rounded-full bg-accent text-accent-foreground flex items-center justify-center shrink-0 overflow-hidden border border-border">
-            {user?.photo ? (
-              <img src={user.photo} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-sm font-black">
-                {(user?.full_name || "U")[0].toUpperCase()}
-              </span>
-            )}
-          </div>
-        </div>
       </div>
     </header>
   );

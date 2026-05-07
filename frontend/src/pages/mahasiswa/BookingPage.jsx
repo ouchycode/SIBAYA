@@ -1,10 +1,8 @@
 import React, { useState } from "react";
 import EmptyState from "@/components/shared/EmptyState";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +17,8 @@ import {
   MapPin,
   Plus,
   Loader2,
+  UserCheck,
+  AlertTriangle,
 } from "lucide-react";
 import { format, parseISO, startOfDay } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -27,6 +27,7 @@ import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useEntityList } from "@/lib/hooks/useEntityList";
 import { sibaApi } from "@/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 
 export default function BookingPage() {
   const queryClient = useQueryClient();
@@ -37,6 +38,7 @@ export default function BookingPage() {
 
   const [selected, setSelected] = useState(null);
   const [notes, setNotes] = useState("");
+  const [isBooking, setIsBooking] = useState(false);
 
   const supervisor = mappings.find(
     (m) => m.student_email === user?.email && m.status === "active",
@@ -44,20 +46,17 @@ export default function BookingPage() {
 
   const today = startOfDay(new Date());
 
-  // Cek apakah mahasiswa sudah punya booking aktif (pending / approved)
   const hasActiveBooking = allBookings.some(
     (b) =>
       b.student_email === user?.email &&
       ["pending", "approved"].includes(b.status),
   );
 
-  // Slot yang tersedia: milik dosen pembimbing, belum lewat, dan is_available = true
   const availableSlots = slots.filter((s) => {
     if (!supervisor) return false;
     const isCorrectSupervisor =
       s.supervisor_email === supervisor.supervisor_email;
     const isFutureOrToday = startOfDay(parseISO(s.date)) >= today;
-    // Backend otomatis set is_available=false saat 1 booking masuk
     const isStillAvailable = s.is_available === true;
     return isCorrectSupervisor && isFutureOrToday && isStillAvailable;
   });
@@ -67,8 +66,6 @@ export default function BookingPage() {
     acc[slot.date].push(slot);
     return acc;
   }, {});
-
-  const [isBooking, setIsBooking] = useState(false);
 
   const handleBook = async () => {
     if (!selected || !user || !supervisor) return;
@@ -89,8 +86,6 @@ export default function BookingPage() {
         notes,
         period_id: supervisor.period_id || null,
       });
-
-      // Refresh slot agar kuota terupdate
       queryClient.invalidateQueries({ queryKey: ["Slot"] });
       queryClient.invalidateQueries({ queryKey: ["Booking"] });
       toast.success("Booking berhasil diajukan! Menunggu persetujuan dosen.");
@@ -107,129 +102,138 @@ export default function BookingPage() {
 
   if (!supervisor) {
     return (
-      <div className="space-y-6">
-        <div className="bg-card border border-border p-5 rounded-md shadow-sm">
-          <h1 className="text-2xl font-bold text-foreground">
-            Booking Bimbingan
-          </h1>
-          <p className="text-sm font-medium text-muted-foreground mt-1">
-            Pilih jadwal bimbingan yang telah disediakan oleh dosen pembimbing
-            Anda.
-          </p>
+      <div className="space-y-4 max-w-2xl">
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 flex items-start gap-4 border-l-2 border-destructive">
+          <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              Akses booking diblokir
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Anda belum dialokasikan ke dosen pembimbing pada periode akademik
+              saat ini. Hubungi BAAK untuk informasi lebih lanjut.
+            </p>
+          </div>
         </div>
-        <div className="border border-border rounded-md bg-card">
-          <EmptyState
-            icon={CalendarDays}
-            title="Belum Ada Dosen Pembimbing"
-            description="Hubungi Biro Akademik (Admin) untuk mendapatkan alokasi dosen pembimbing sebelum dapat melakukan booking."
-          />
-        </div>
+        <EmptyState
+          icon={UserCheck}
+          title="Belum ada alokasi pembimbing"
+          description="Harap hubungi Biro Administrasi Akademik (BAAK) atau Program Studi terkait."
+        />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header Halaman */}
-      <div className="bg-card border border-border p-5 rounded-md shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-5 max-w-7xl">
+      {/* Header */}
+      <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            Booking Jadwal Bimbingan
+          <p className="text-[11px] text-muted-foreground uppercase tracking-widest mb-1">
+            Booking Bimbingan
+          </p>
+          <h1 className="text-base font-semibold text-foreground">
+            Pilih Slot Jadwal Tersedia
           </h1>
-          <p className="text-sm font-medium text-muted-foreground mt-1">
-            Pilih dan ajukan jadwal dari slot yang tersedia.
-          </p>
         </div>
-        <div className="bg-primary/5 border border-primary/20 px-3 py-2 rounded-sm shrink-0">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Dosen Pembimbing
-          </p>
-          <p className="text-sm font-bold text-primary">
-            {supervisor.supervisor_name}
-          </p>
+
+        <div className="flex items-center gap-3 bg-muted/50 rounded px-4 py-3 shrink-0">
+          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+            <UserCheck className="w-4 h-4 text-primary" />
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground">
+              Dosen Pembimbing
+            </p>
+            <p className="text-sm font-medium text-foreground">
+              {supervisor.supervisor_name}
+            </p>
+          </div>
         </div>
       </div>
 
+      {/* Slot List */}
       {Object.keys(grouped).length === 0 ? (
-        <div className="border border-border rounded-md bg-card">
-          <EmptyState
-            icon={CalendarDays}
-            title="Tidak Ada Slot Tersedia"
-            description="Dosen pembimbing Anda belum membuka slot bimbingan baru untuk saat ini."
-          />
-        </div>
+        <EmptyState
+          icon={CalendarDays}
+          title="Jadwal tidak tersedia"
+          description="Dosen pembimbing Anda belum merilis slot waktu bimbingan untuk periode ini."
+        />
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {Object.entries(grouped)
             .sort(([a], [b]) => new Date(a) - new Date(b))
             .map(([date, dateSlots]) => (
               <div
                 key={date}
-                className="bg-card border border-border p-5 rounded-md shadow-sm"
+                className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden"
               >
-                <h2 className="text-sm font-black text-foreground mb-4 uppercase tracking-wider border-b border-border pb-3 flex items-center gap-2">
-                  <CalendarDays className="w-4 h-4 text-primary" />
-                  {format(parseISO(date), "EEEE, dd MMMM yyyy", {
-                    locale: localeId,
-                  })}
-                </h2>
+                {/* Tanggal header */}
+                <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-border/50">
+                  <CalendarDays className="w-4 h-4 text-muted-foreground" />
+                  <h2 className="text-sm font-semibold text-foreground">
+                    {format(parseISO(date), "EEEE, dd MMMM yyyy", {
+                      locale: localeId,
+                    })}
+                  </h2>
+                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="p-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                   {dateSlots.map((slot) => (
-                    <Card
+                    <div
                       key={slot.id}
-                      className="border border-border shadow-none rounded-md bg-background flex flex-col"
+                      className="border border-border/60 rounded-md p-4 bg-background flex flex-col gap-3 hover:border-primary/30 hover:shadow-[0_1px_6px_rgba(0,0,0,0.07)] transition-all"
                     >
-                      <CardContent className="p-4 flex flex-col h-full">
-                        <div className="flex items-start justify-between mb-3 gap-2">
-                          <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 px-2 py-1 rounded-sm">
-                            <Clock className="w-3.5 h-3.5 text-primary" />
-                            <span className="font-bold text-sm text-primary">
-                              {slot.start_time} - {slot.end_time}
-                            </span>
-                          </div>
-
-                          <Badge
-                            variant="outline"
-                            className="bg-emerald-50 text-emerald-700 border-emerald-300 text-[9px] font-bold uppercase tracking-wider rounded-sm shrink-0"
-                          >
-                            Tersedia
-                          </Badge>
-                        </div>
-
-                        <div className="flex items-center gap-2 text-xs font-bold text-foreground bg-muted/50 p-2.5 rounded-sm border border-border/50 mb-4">
-                          {slot.mode === "online" ? (
-                            <Video className="w-4 h-4 text-blue-500 shrink-0" />
-                          ) : (
-                            <MapPin className="w-4 h-4 text-amber-500 shrink-0" />
-                          )}
-                          <span className="truncate">
-                            {slot.mode === "online"
-                              ? "Online (Daring)"
-                              : `Offline: ${slot.location}`}
+                      {/* Waktu + badge */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span className="font-mono text-sm font-semibold text-foreground">
+                            {slot.start_time} – {slot.end_time}
                           </span>
                         </div>
+                        <span className="text-[10px] text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded font-medium dark:bg-green-950/40 dark:border-green-800 dark:text-green-400">
+                          Tersedia
+                        </span>
+                      </div>
 
-                        <div className="mt-auto pt-2 border-t border-border">
-                          <Button
-                            size="sm"
-                            className="w-full gap-2 rounded-sm font-bold shadow-none"
-                            onClick={() => setSelected(slot)}
-                            disabled={hasActiveBooking}
-                            title={
-                              hasActiveBooking
-                                ? "Anda sudah memiliki booking yang sedang aktif"
-                                : ""
-                            }
-                          >
-                            <Plus className="w-4 h-4" />
-                            {hasActiveBooking
-                              ? "Booking Aktif Ada"
-                              : "Pilih Jadwal Ini"}
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
+                      {/* Mode */}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {slot.mode === "online" ? (
+                          <Video className="w-3.5 h-3.5 shrink-0" />
+                        ) : (
+                          <MapPin className="w-3.5 h-3.5 shrink-0" />
+                        )}
+                        <span>
+                          {slot.mode === "online"
+                            ? "Online"
+                            : `Luring${slot.location ? ` · ${slot.location}` : ""}`}
+                        </span>
+                      </div>
+
+                      {/* Tombol */}
+                      <Button
+                        size="sm"
+                        variant={hasActiveBooking ? "outline" : "default"}
+                        className="w-full rounded h-8 text-xs mt-auto"
+                        onClick={() => setSelected(slot)}
+                        disabled={hasActiveBooking}
+                        title={
+                          hasActiveBooking
+                            ? "Anda memiliki bimbingan aktif"
+                            : ""
+                        }
+                      >
+                        {hasActiveBooking ? (
+                          "Kuota aktif penuh"
+                        ) : (
+                          <>
+                            <Plus className="w-3.5 h-3.5 mr-1.5" />
+                            Pilih slot ini
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -237,93 +241,96 @@ export default function BookingPage() {
         </div>
       )}
 
-      {/* Dialog Konfirmasi (Tetap Utuh) */}
+      {/* Dialog Konfirmasi */}
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-        <DialogContent className="rounded-md border-border sm:max-w-md">
-          <DialogHeader className="border-b border-border pb-4">
-            <DialogTitle className="text-lg font-bold">
-              Konfirmasi Ajukan Bimbingan
+        <DialogContent className="rounded-md border-0 shadow-[0_8px_30px_rgba(0,0,0,0.12)] sm:max-w-md p-0 overflow-hidden bg-card">
+          <DialogHeader className="px-5 py-4 border-b border-border/50">
+            <DialogTitle className="text-sm font-semibold text-foreground">
+              Konfirmasi Pengajuan Bimbingan
             </DialogTitle>
           </DialogHeader>
 
           {selected && (
-            <div className="space-y-4 pt-2">
-              <div className="p-4 rounded-md bg-muted/30 border border-border text-sm space-y-3">
-                <div className="grid grid-cols-[80px_1fr] items-baseline border-b border-border/50 pb-2">
-                  <span className="font-bold text-muted-foreground uppercase text-[10px] tracking-wider">
-                    Tanggal
-                  </span>
-                  <span className="font-bold text-foreground">
+            <div className="px-5 py-4 space-y-4">
+              {/* Ringkasan */}
+              <div className="bg-muted/40 rounded p-4 space-y-2.5 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground text-xs">Tanggal</span>
+                  <span className="font-medium text-foreground">
                     {format(parseISO(selected.date), "dd MMMM yyyy", {
                       locale: localeId,
                     })}
                   </span>
                 </div>
-                <div className="grid grid-cols-[80px_1fr] items-baseline border-b border-border/50 pb-2">
-                  <span className="font-bold text-muted-foreground uppercase text-[10px] tracking-wider">
-                    Waktu
-                  </span>
-                  <span className="font-bold text-foreground">
-                    {selected.start_time} - {selected.end_time} WIB
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground text-xs">Waktu</span>
+                  <span className="font-mono font-semibold text-foreground">
+                    {selected.start_time} – {selected.end_time} WIB
                   </span>
                 </div>
-                <div className="grid grid-cols-[80px_1fr] items-baseline border-b border-border/50 pb-2">
-                  <span className="font-bold text-muted-foreground uppercase text-[10px] tracking-wider">
-                    Mode
-                  </span>
-                  <span className="font-bold text-foreground flex items-center gap-1.5">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground text-xs">Metode</span>
+                  <span className="font-medium text-foreground flex items-center gap-1.5">
                     {selected.mode === "online" ? (
                       <>
-                        <Video className="w-3.5 h-3.5" /> Online (Daring)
+                        <Video className="w-3.5 h-3.5" /> Online
                       </>
                     ) : (
                       <>
-                        <MapPin className="w-3.5 h-3.5" /> Offline (Tatap Muka)
+                        <MapPin className="w-3.5 h-3.5" /> Luring
                       </>
                     )}
                   </span>
                 </div>
-                <div className="grid grid-cols-[80px_1fr] items-baseline">
-                  <span className="font-bold text-muted-foreground uppercase text-[10px] tracking-wider">
-                    Lokasi
-                  </span>
-                  <span className="font-bold text-foreground">
-                    {selected.location}
-                  </span>
-                </div>
+                {selected.location && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground text-xs">
+                      Lokasi
+                    </span>
+                    <span className="font-medium text-foreground">
+                      {selected.location}
+                    </span>
+                  </div>
+                )}
               </div>
 
-              <div>
-                <Label className="font-bold text-foreground">
-                  Topik / Catatan Pengajuan (Opsional)
+              {/* Catatan */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground">
+                  Topik / Catatan
                 </Label>
                 <Textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Misal: Bimbingan Bab 1 terkait perbaikan latar belakang..."
-                  className="mt-1.5 rounded-sm border-border shadow-none resize-none h-20"
+                  placeholder="Deskripsikan progres atau bab yang akan didiskusikan..."
+                  className="rounded h-24 text-sm resize-none"
                 />
+                <p className="text-[11px] text-muted-foreground">
+                  Pastikan catatan relevan dengan progres logbook terakhir Anda.
+                </p>
               </div>
             </div>
           )}
 
-          <DialogFooter className="border-t border-border pt-4 sm:justify-end gap-2 mt-2">
+          <DialogFooter className="px-5 py-3.5 border-t border-border/50 flex flex-row justify-end gap-2">
             <Button
               variant="outline"
-              className="rounded-sm shadow-none font-bold"
+              size="sm"
+              className="rounded text-xs"
               onClick={() => setSelected(null)}
             >
               Batal
             </Button>
             <Button
-              className="rounded-sm shadow-none font-bold"
+              size="sm"
+              className="rounded text-xs"
               onClick={handleBook}
               disabled={isBooking}
             >
               {isBooking ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Mengajukan...
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />{" "}
+                  Memproses...
                 </>
               ) : (
                 "Kirim Pengajuan"

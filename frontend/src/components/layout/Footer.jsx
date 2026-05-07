@@ -4,33 +4,37 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-card border-t border-border mt-auto z-10 relative">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-          <div className="text-center md:text-left">
-            <p className="text-sm font-bold text-foreground">
-              SIBAYA{" "}
-              <span className="font-medium text-muted-foreground">
-                | Sistem Bimbingan Akademik
-              </span>
-            </p>
-            <p className="text-xs font-medium text-muted-foreground mt-0.5">
-              &copy; {currentYear} Universitas Yatsi Madani. Hak Cipta
-              Dilindungi.
-            </p>
+    <footer className="bg-card border-t border-border/50 mt-auto z-10 relative shadow-[0_-1px_4px_rgba(0,0,0,0.04)]">
+      <div className="max-w-7xl mx-auto px-5 py-3.5">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* Kiri */}
+          <div className="flex items-center gap-2 text-center sm:text-left">
+            <span className="text-xs font-semibold text-foreground">
+              SIBAYA
+            </span>
+            <div className="w-px h-3 bg-border" />
+            <span className="text-xs text-muted-foreground">
+              Sistem Bimbingan Akademik
+            </span>
+            <div className="w-px h-3 bg-border hidden sm:block" />
+            <span className="text-[11px] text-muted-foreground hidden sm:block">
+              &copy; {currentYear} Universitas Yatsi Madani
+            </span>
           </div>
 
-          {/* Bagian Kanan: Versi atau Link Tambahan */}
-          <div className="flex items-center gap-4 text-xs font-bold text-muted-foreground">
-            <a href="#" className="hover:text-primary transition-colors">
-              Bantuan
+          {/* Kanan */}
+          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+            <a href="#" className="hover:text-foreground transition-colors">
+              Bantuan BAA
             </a>
-            <span className="w-1 h-1 rounded-full bg-border"></span>
-            <a href="#" className="hover:text-primary transition-colors">
-              Privasi
+            <div className="w-px h-3 bg-border" />
+            <a href="#" className="hover:text-foreground transition-colors">
+              Kebijakan Privasi
             </a>
-            <span className="w-1 h-1 rounded-full bg-border"></span>
-            <span className="opacity-60">Versi 1.0.0</span>
+            <div className="w-px h-3 bg-border" />
+            <span className="font-mono text-[10px] bg-muted px-2 py-0.5 rounded border border-border/50 text-muted-foreground">
+              v1.0.0
+            </span>
           </div>
         </div>
       </div>

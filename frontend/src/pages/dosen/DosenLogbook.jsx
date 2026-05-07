@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -32,6 +33,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  AlertTriangle,
+  PenTool,
+  Target,
 } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -40,19 +44,22 @@ import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useEntityList } from "@/lib/hooks/useEntityList";
 import { sibaApi } from "@/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 5;
 
 export default function DosenLogbook() {
+  // ==========================================
+  // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
+  // ==========================================
   const queryClient = useQueryClient();
   const { data: user } = useCurrentUser();
   const { data: bookingsAll = [] } = useEntityList("Booking");
   const { data: logsAll = [] } = useEntityList("Logbook");
 
-  // State untuk Dialog & Form
   const [showDialog, setShowDialog] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
-  const [editingLogId, setEditingLogId] = useState(null); // Menandakan apakah sedang mode Edit
+  const [editingLogId, setEditingLogId] = useState(null);
   const [form, setForm] = useState({
     summary: "",
     revisions: "",
@@ -60,19 +67,14 @@ export default function DosenLogbook() {
     progress_percentage: 0,
   });
 
-  // State untuk Filter & Pagination
   const [studentFilter, setStudentFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
   const [isValidatingId, setIsValidatingId] = useState(null);
 
-  // Backend sudah scope data ke supervisor yg login — tidak perlu filter manual.
-  // Filter manual menyebabkan race condition jika user belum loaded saat data tiba.
   const logs = logsAll;
   const completedBookings = bookingsAll.filter((b) => b.status === "completed");
 
-  // Data Sesi Belum Dicatat (Sesi Selesai yg belum ada logbook-nya)
-  // Konversi ke String untuk menghindari mismatch tipe (API bisa return string/number)
   const loggedBookingIds = new Set(logs.map((l) => String(l.booking_id)));
   const unloggedBookings = completedBookings.filter(
     (b) => !loggedBookingIds.has(String(b.id)),
@@ -85,9 +87,8 @@ export default function DosenLogbook() {
       if (studentFilter === "all") return true;
       return l.student_email === studentFilter;
     })
-    .sort((a, b) => new Date(b.date) - new Date(a.date)); // Terbaru di atas
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  // Logika Pagination
   const totalPages = Math.ceil(filteredLogs.length / ITEMS_PER_PAGE) || 1;
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const currentLogs = filteredLogs.slice(
@@ -114,7 +115,6 @@ export default function DosenLogbook() {
 
   const openEditDialog = (log) => {
     setEditingLogId(log.id);
-    // Cari data booking aslinya untuk sekadar menampilkan info mahasiswa di modal
     const bookingInfo = completedBookings.find(
       (b) => b.id === log.booking_id,
     ) || {
@@ -123,7 +123,6 @@ export default function DosenLogbook() {
     };
     setSelectedBooking(bookingInfo);
 
-    // Isi form dengan data yang sudah ada sebelumnya
     setForm({
       summary: log.summary || "",
       revisions: log.revisions || "",
@@ -157,7 +156,9 @@ export default function DosenLogbook() {
       queryClient.invalidateQueries({ queryKey: ["Logbook"] });
       setShowDialog(false);
     } catch (error) {
-      toast.error(error.data?.message || error.message || "Gagal menyimpan catatan.");
+      toast.error(
+        error.data?.message || error.message || "Gagal menyimpan catatan.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -172,43 +173,57 @@ export default function DosenLogbook() {
       queryClient.invalidateQueries({ queryKey: ["Logbook"] });
       toast.success("Catatan berhasil divalidasi.");
     } catch (error) {
-      toast.error(error.data?.message || error.message || "Gagal memvalidasi catatan.");
+      toast.error(
+        error.data?.message || error.message || "Gagal memvalidasi catatan.",
+      );
     } finally {
       setIsValidatingId(null);
     }
   };
 
+  // ==========================================
+  // PERUBAHAN PADA UI/UX (FRONTEND KAKU & LEGA)
+  // ==========================================
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-10">
       {/* Header Halaman Formal & Filter Bar */}
-      <div className="bg-card border border-border p-5 rounded-md shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
+      <div className="bg-card border border-primary/15 p-6 sm:p-8 rounded-sm shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" />
+        <div className="pl-2">
+          <h1 className="text-2xl font-black text-primary uppercase tracking-tight">
             Logbook Bimbingan
           </h1>
-          <p className="text-sm font-medium text-muted-foreground mt-1">
+          <p className="text-sm font-medium text-muted-foreground mt-2 border-l-2 border-primary/30 pl-3">
             Catat hasil bimbingan dan validasi progres pengerjaan mahasiswa
-            Anda.
+            akademik Anda.
           </p>
         </div>
 
         {/* Dropdown Filter Mahasiswa */}
         {uniqueStudents.length > 0 && (
-          <div className="flex items-center gap-2 shrink-0">
-            <Filter className="w-4 h-4 text-muted-foreground hidden sm:block" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0 bg-muted/30 p-3 rounded-sm border border-border">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-primary" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                Filter Mahasiswa:
+              </span>
+            </div>
             <Select value={studentFilter} onValueChange={handleFilterChange}>
-              <SelectTrigger className="w-full sm:w-[220px] h-9 rounded-sm border-border font-medium text-xs shadow-none">
-                <SelectValue placeholder="Semua Mahasiswa" />
+              <SelectTrigger className="w-full sm:w-[260px] h-10 rounded-sm border-2 border-border font-bold text-xs uppercase tracking-wider shadow-none focus:ring-primary/50">
+                <SelectValue placeholder="SEMUA MAHASISWA" />
               </SelectTrigger>
-              <SelectContent className="rounded-sm border-border max-h-[200px]">
-                <SelectItem value="all" className="text-xs font-bold">
-                  Semua Mahasiswa
+              <SelectContent className="rounded-sm border-2 border-border shadow-md max-h-[250px]">
+                <SelectItem
+                  value="all"
+                  className="text-xs font-bold uppercase tracking-wider focus:bg-primary/10"
+                >
+                  SEMUA MAHASISWA
                 </SelectItem>
                 {uniqueStudents.map((email) => (
                   <SelectItem
                     key={email}
                     value={email}
-                    className="text-xs font-medium"
+                    className="text-xs font-bold focus:bg-primary/10"
                   >
                     {email}
                   </SelectItem>
@@ -219,31 +234,32 @@ export default function DosenLogbook() {
         )}
       </div>
 
-      {/* Sesi Belum Dicatat - Menggunakan style peringatan (Warning) yang rapi */}
+      {/* Sesi Belum Dicatat - Menggunakan style peringatan administratif */}
       {unloggedBookings.length > 0 && studentFilter === "all" && (
-        <Card className="rounded-md border border-amber-200 bg-amber-50 shadow-none">
-          <CardHeader className="pb-3 border-b border-amber-200/50">
-            <CardTitle className="text-sm font-bold text-amber-800 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" />
-              Sesi Bimbingan Belum Dicatat ({unloggedBookings.length})
+        <Card className="rounded-sm border-2 border-amber-200 bg-card shadow-sm overflow-hidden mt-6">
+          <CardHeader className="py-4 px-6 border-b-2 border-amber-100 bg-amber-50/50 border-l-4 border-l-amber-500">
+            <CardTitle className="text-sm font-black text-amber-700 uppercase tracking-widest flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5" />
+              SESI BIMBINGAN BELUM DICATAT ({unloggedBookings.length})
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-3">
-            <div className="space-y-2">
+          <CardContent className="p-6 bg-amber-50/20">
+            <div className="space-y-3">
               {unloggedBookings.map((b) => (
                 <div
                   key={b.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-white rounded-md border border-amber-100 gap-3"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-background rounded-sm border-2 border-amber-100 gap-4 hover:border-amber-300 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded bg-amber-100 flex items-center justify-center shrink-0">
-                      <User className="w-4 h-4 text-amber-700" />
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-sm bg-amber-100 flex items-center justify-center shrink-0 border border-amber-200">
+                      <User className="w-5 h-5 text-amber-700" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-foreground">
+                      <p className="text-sm font-black text-foreground uppercase tracking-wide">
                         {b.student_name}
                       </p>
-                      <p className="text-xs font-medium text-muted-foreground mt-0.5">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
+                        TANGGAL SESI:{" "}
                         {format(new Date(b.date), "dd MMMM yyyy", {
                           locale: localeId,
                         })}
@@ -252,10 +268,10 @@ export default function DosenLogbook() {
                   </div>
                   <Button
                     size="sm"
-                    className="gap-1.5 rounded-sm font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-none w-full sm:w-auto"
+                    className="h-9 px-5 gap-2 rounded-sm font-black uppercase tracking-wider bg-amber-600 hover:bg-amber-700 text-white shadow-none shrink-0"
                     onClick={() => openCreateDialog(b)}
                   >
-                    <Plus className="w-3.5 h-3.5" /> Buat Catatan
+                    <Plus className="w-4 h-4" /> BUAT CATATAN
                   </Button>
                 </div>
               ))}
@@ -265,132 +281,133 @@ export default function DosenLogbook() {
       )}
 
       {filteredLogs.length === 0 ? (
-        <div className="border border-border rounded-md bg-card">
+        <div className="border border-border rounded-sm bg-card mt-6">
           <EmptyState
             icon={BookOpen}
             title={
-              studentFilter === "all" ? "Belum Ada Catatan" : "Tidak Ada Data"
+              studentFilter === "all" ? "BELUM ADA CATATAN" : "TIDAK ADA DATA"
             }
             description="Riwayat logbook yang sudah dicatat atau divalidasi akan muncul di sini."
           />
         </div>
       ) : (
-        <div className="space-y-4">
-          <div className="space-y-4">
+        <div className="space-y-6 mt-6">
+          <div className="space-y-6">
             {currentLogs.map((log) => (
               <Card
                 key={log.id}
-                className="rounded-md border border-border shadow-none bg-card overflow-hidden"
+                className="rounded-sm border-2 border-primary/10 shadow-sm bg-card overflow-hidden hover:border-primary/30 transition-all"
               >
                 <CardContent className="p-0">
-                  {/* Header Logbook Card */}
-                  <div className="bg-muted/30 border-b border-border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded bg-primary text-primary-foreground flex items-center justify-center border border-primary-foreground/20 shadow-sm shrink-0">
-                        <FileText className="w-5 h-5" />
+                  {/* Header Logbook Card - Solid Bar */}
+                  <div className="bg-muted/40 border-b-2 border-primary/10 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-l-4 border-l-primary">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-sm bg-primary/10 text-primary flex items-center justify-center border border-primary/20 shrink-0">
+                        <FileText className="w-6 h-6" />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-foreground uppercase tracking-wide">
+                        <p className="text-sm font-black text-foreground uppercase tracking-wider">
                           {format(new Date(log.date), "EEEE, dd MMMM yyyy", {
                             locale: localeId,
                           })}
                         </p>
-                        <p className="text-xs font-medium text-muted-foreground mt-0.5 flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5" /> {log.student_email}
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1 flex items-center gap-1.5 bg-background px-2 py-0.5 rounded-sm border border-border w-fit">
+                          <User className="w-3 h-3" /> {log.student_email}
                         </p>
                       </div>
                     </div>
 
                     {/* Aksi / Status Validasi */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-3">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-8 gap-1.5 rounded-sm font-bold shadow-none text-muted-foreground hover:text-foreground"
+                        className="h-8 px-4 gap-1.5 rounded-sm font-black uppercase tracking-wider shadow-none border-2 border-border hover:bg-muted"
                         onClick={() => openEditDialog(log)}
                       >
-                        <Edit className="w-3.5 h-3.5" /> Edit
+                        <Edit className="w-3.5 h-3.5" /> EDIT
                       </Button>
 
                       {log.validated_by_supervisor ? (
                         <Badge
                           variant="outline"
-                          className="bg-emerald-50 text-emerald-700 border-emerald-300 gap-1.5 px-2.5 py-1 rounded-sm font-bold uppercase tracking-wider text-[10px]"
+                          className="bg-emerald-50 text-emerald-700 border-emerald-300 gap-1.5 px-3 py-1.5 rounded-sm font-black uppercase tracking-widest text-[10px]"
                         >
-                          <CheckCircle className="w-3.5 h-3.5" /> Valid
+                          <CheckCircle className="w-3.5 h-3.5" /> VALID
                         </Badge>
                       ) : (
                         <Button
                           size="sm"
-                          variant="outline"
-                          className="h-8 gap-1.5 rounded-sm font-bold border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground shadow-none"
+                          className="h-8 px-4 gap-1.5 rounded-sm font-black uppercase tracking-wider bg-amber-600 hover:bg-amber-700 text-white shadow-none"
                           onClick={() => handleValidate(log.id)}
                           disabled={isValidatingId === log.id}
                         >
-                          {isValidatingId === log.id
-                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            : <CheckCircle className="w-3.5 h-3.5" />}
-                          Validasi
+                          {isValidatingId === log.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <CheckCircle className="w-3.5 h-3.5" />
+                          )}
+                          VALIDASI
                         </Button>
                       )}
                     </div>
                   </div>
 
-                  {/* Body Logbook Card */}
-                  <div className="p-5 space-y-5">
+                  {/* Body Logbook Card - Diberi padding luas */}
+                  <div className="p-6 space-y-6">
                     {log.progress_percentage != null && (
-                      <div className="bg-muted/30 p-3 rounded-md border border-border/50">
-                        <div className="flex justify-between items-center text-xs mb-2">
-                          <span className="font-bold text-foreground uppercase tracking-wide">
+                      <div className="bg-background border-2 border-border p-4 rounded-sm">
+                        <div className="flex justify-between items-center mb-3">
+                          <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">
                             Progres Pengerjaan
                           </span>
-                          <span className="font-black text-primary bg-primary/10 px-2 py-0.5 rounded-sm border border-primary/20">
+                          <span className="font-black text-primary bg-primary/10 px-3 py-1 rounded-sm border border-primary/20 text-xs">
                             {log.progress_percentage}%
                           </span>
                         </div>
-                        <div className="h-2.5 w-full bg-muted-foreground/20 rounded-sm overflow-hidden">
-                          <div
-                            className="h-full bg-primary"
-                            style={{ width: `${log.progress_percentage}%` }}
-                          />
-                        </div>
+                        <Progress
+                          value={log.progress_percentage}
+                          className="h-3 rounded-sm bg-muted-foreground/20"
+                        />
                       </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Ringkasan & Revisi - Grid Tabular */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {log.summary && (
-                        <div className="space-y-1.5">
-                          <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 border-b border-border pb-1">
-                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                        <div className="space-y-2 border border-border rounded-sm p-4 bg-muted/10">
+                          <h4 className="text-[10px] font-black text-foreground uppercase tracking-widest flex items-center gap-2 border-b border-border/50 pb-2 mb-2">
+                            <div className="w-2 h-2 rounded-none bg-primary" />
                             Ringkasan Bimbingan
                           </h4>
-                          <p className="text-sm text-foreground leading-relaxed text-justify">
+                          <p className="text-sm text-muted-foreground font-medium leading-relaxed text-justify whitespace-pre-wrap">
                             {log.summary}
                           </p>
                         </div>
                       )}
 
                       {log.revisions && (
-                        <div className="space-y-1.5">
-                          <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 border-b border-border pb-1">
-                            <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                        <div className="space-y-2 border border-destructive/20 rounded-sm p-4 bg-destructive/5">
+                          <h4 className="text-[10px] font-black text-destructive uppercase tracking-widest flex items-center gap-2 border-b border-destructive/20 pb-2 mb-2">
+                            <PenTool className="w-3 h-3" />
                             Catatan Revisi
                           </h4>
-                          <p className="text-sm text-foreground leading-relaxed text-justify">
+                          <p className="text-sm text-foreground font-medium leading-relaxed text-justify whitespace-pre-wrap">
                             {log.revisions}
                           </p>
                         </div>
                       )}
                     </div>
 
+                    {/* Target Selanjutnya - Aksen Banner */}
                     {log.next_steps && (
                       <div className="pt-2">
-                        <div className="p-3 rounded-md bg-accent/5 border border-accent/20">
-                          <h4 className="text-xs font-bold text-accent-foreground uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-accent" />
+                        <div className="p-4 rounded-sm bg-accent/5 border-2 border-accent/20">
+                          <h4 className="text-[10px] font-black text-accent-foreground uppercase tracking-widest flex items-center gap-2 mb-2">
+                            <Target className="w-3.5 h-3.5" />
                             Target / Langkah Selanjutnya
                           </h4>
-                          <p className="text-sm font-medium text-foreground">
+                          <p className="text-sm font-semibold text-foreground leading-relaxed">
                             {log.next_steps}
                           </p>
                         </div>
@@ -402,36 +419,36 @@ export default function DosenLogbook() {
             ))}
           </div>
 
-          {/* Kontrol Pagination */}
+          {/* Kontrol Pagination Formal - Box Kaku */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between bg-card border border-border p-3 rounded-md shadow-sm mt-4">
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                Halaman {currentPage} dari {totalPages}
+            <div className="flex flex-col sm:flex-row items-center justify-between bg-muted/20 border-2 border-primary/10 p-4 rounded-sm mt-8 gap-4">
+              <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">
+                HALAMAN {currentPage} DARI {totalPages}
               </p>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 px-3 rounded-sm shadow-none font-bold text-xs"
+                  className="h-10 px-4 rounded-sm shadow-none font-black text-[10px] uppercase tracking-wider border-2 border-border hover:bg-background"
                   onClick={() =>
                     setCurrentPage((prev) => Math.max(prev - 1, 1))
                   }
                   disabled={currentPage === 1}
                 >
-                  <ChevronLeft className="w-4 h-4 mr-1" />
-                  Sebelumnya
+                  <ChevronLeft className="w-4 h-4 mr-1.5" />
+                  SEBELUMNYA
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 px-3 rounded-sm shadow-none font-bold text-xs"
+                  className="h-10 px-4 rounded-sm shadow-none font-black text-[10px] uppercase tracking-wider border-2 border-border hover:bg-background"
                   onClick={() =>
                     setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                   }
                   disabled={currentPage === totalPages}
                 >
-                  Selanjutnya
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  SELANJUTNYA
+                  <ChevronRight className="w-4 h-4 ml-1.5" />
                 </Button>
               </div>
             </div>
@@ -441,112 +458,134 @@ export default function DosenLogbook() {
 
       {/* Dialog Form Tambah / Edit Catatan */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="rounded-md border-border sm:max-w-xl max-h-[90vh] overflow-y-auto custom-scrollbar">
-          <DialogHeader className="border-b border-border pb-4">
-            <DialogTitle className="font-bold text-lg">
+        <DialogContent className="rounded-sm border-2 border-primary/20 sm:max-w-2xl p-0 overflow-hidden bg-card max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <DialogHeader className="px-6 py-5 border-b border-primary/10 bg-muted/40">
+            <DialogTitle className="text-base font-black uppercase tracking-wide text-primary">
               {editingLogId
                 ? "Edit Catatan Bimbingan"
-                : "Tambah Catatan Bimbingan"}
+                : "Formulir Catatan Bimbingan"}
             </DialogTitle>
           </DialogHeader>
 
           {selectedBooking && (
-            <div className="space-y-4 pt-2">
-              <div className="bg-muted/30 border border-border p-3 rounded-md flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <p className="text-sm text-muted-foreground">
-                  Mahasiswa:{" "}
-                  <span className="font-bold text-foreground">
+            <div className="px-6 py-6 space-y-6">
+              {/* Info Mahasiswa Tabular Grid */}
+              <div className="border border-border rounded-sm overflow-hidden text-sm">
+                <div className="grid grid-cols-[130px_1fr] bg-muted/20 border-b border-border">
+                  <div className="px-4 py-2.5 font-bold text-muted-foreground uppercase text-[10px] tracking-wider border-r border-border bg-muted/40">
+                    MAHASISWA
+                  </div>
+                  <div className="px-4 py-2.5 font-black text-foreground uppercase">
                     {selectedBooking.student_name}
-                  </span>
-                </p>
-                <p className="text-xs font-bold text-foreground bg-background px-2 py-1 rounded-sm border border-border">
-                  {format(new Date(selectedBooking.date), "dd MMMM yyyy", {
-                    locale: localeId,
-                  })}
-                </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-[130px_1fr] bg-background">
+                  <div className="px-4 py-2.5 font-bold text-muted-foreground uppercase text-[10px] tracking-wider border-r border-border bg-muted/40">
+                    TANGGAL SESI
+                  </div>
+                  <div className="px-4 py-2.5 font-bold text-primary uppercase">
+                    {format(new Date(selectedBooking.date), "dd MMMM yyyy", {
+                      locale: localeId,
+                    })}
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <Label className="font-bold text-foreground">
-                  Ringkasan Bimbingan
-                </Label>
-                <Textarea
-                  value={form.summary}
-                  onChange={(e) =>
-                    setForm({ ...form, summary: e.target.value })
-                  }
-                  className="mt-1.5 rounded-sm border-border shadow-none h-20 resize-none"
-                  placeholder="Catat poin-poin penting yang dibahas..."
-                />
-              </div>
-
-              <div>
-                <Label className="font-bold text-foreground">
-                  Instruksi Revisi
-                </Label>
-                <Textarea
-                  value={form.revisions}
-                  onChange={(e) =>
-                    setForm({ ...form, revisions: e.target.value })
-                  }
-                  className="mt-1.5 rounded-sm border-border shadow-none h-20 resize-none"
-                  placeholder="Catat apa saja yang perlu diperbaiki mahasiswa..."
-                />
-              </div>
-
-              <div>
-                <Label className="font-bold text-foreground">
-                  Langkah Selanjutnya (Target)
-                </Label>
-                <Textarea
-                  value={form.next_steps}
-                  onChange={(e) =>
-                    setForm({ ...form, next_steps: e.target.value })
-                  }
-                  className="mt-1.5 rounded-sm border-border shadow-none h-20 resize-none"
-                  placeholder="Target untuk pertemuan berikutnya..."
-                />
-              </div>
-
-              <div>
-                <Label className="font-bold text-foreground">
-                  Progres Pengerjaan (%)
-                </Label>
-                <div className="flex items-center gap-3 mt-1.5">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={form.progress_percentage}
+              {/* Input Forms */}
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1 mb-1.5">
+                    Ringkasan Bimbingan
+                  </Label>
+                  <Textarea
+                    value={form.summary}
                     onChange={(e) =>
-                      setForm({ ...form, progress_percentage: e.target.value })
+                      setForm({ ...form, summary: e.target.value })
                     }
-                    className="rounded-sm border-border shadow-none w-24"
+                    className="rounded-sm border-2 border-border focus-visible:ring-primary shadow-none h-24 resize-none p-3 font-medium text-sm"
+                    placeholder="Catat poin-poin penting yang dibahas..."
                   />
-                  <span className="text-sm font-medium text-muted-foreground">
-                    %
-                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1 mb-1.5 text-destructive/80">
+                      Instruksi Revisi (Opsional)
+                    </Label>
+                    <Textarea
+                      value={form.revisions}
+                      onChange={(e) =>
+                        setForm({ ...form, revisions: e.target.value })
+                      }
+                      className="rounded-sm border-2 border-border focus-visible:ring-destructive shadow-none h-24 resize-none p-3 font-medium text-sm"
+                      placeholder="Catat apa saja yang perlu diperbaiki..."
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1 mb-1.5 text-accent-foreground/80">
+                      Langkah Selanjutnya
+                    </Label>
+                    <Textarea
+                      value={form.next_steps}
+                      onChange={(e) =>
+                        setForm({ ...form, next_steps: e.target.value })
+                      }
+                      className="rounded-sm border-2 border-border focus-visible:ring-accent shadow-none h-24 resize-none p-3 font-medium text-sm"
+                      placeholder="Target pertemuan berikutnya..."
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1 mb-1.5">
+                    Progres Pengerjaan (%)
+                  </Label>
+                  <div className="flex items-center gap-3">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={form.progress_percentage}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          progress_percentage: e.target.value,
+                        })
+                      }
+                      className="rounded-sm border-2 border-border focus-visible:ring-primary shadow-none w-24 h-10 font-mono font-bold px-3 text-lg"
+                    />
+                    <span className="text-sm font-black text-muted-foreground uppercase tracking-widest bg-muted/50 px-3 py-2 rounded-sm border border-border">
+                      Persen Selesai
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          <DialogFooter className="border-t border-border pt-4 sm:justify-end gap-2 mt-4">
+          <DialogFooter className="px-6 py-4 border-t border-primary/10 bg-muted/20 flex flex-row justify-end gap-3">
             <Button
               variant="outline"
-              className="rounded-sm shadow-none font-bold"
+              className="rounded-sm shadow-none font-black uppercase tracking-wider text-xs border-border px-5"
               onClick={() => setShowDialog(false)}
             >
-              Batal
+              BATALKAN
             </Button>
             <Button
-              className="rounded-sm shadow-none font-bold"
+              className="rounded-sm shadow-none font-black uppercase tracking-wider text-xs px-5"
               onClick={handleSave}
               disabled={isSaving}
             >
-              {isSaving
-                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Menyimpan...</>
-                : editingLogId ? "Simpan Perubahan" : "Simpan Catatan"}
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  MEMPROSES...
+                </>
+              ) : editingLogId ? (
+                "SIMPAN PERUBAHAN"
+              ) : (
+                "SIMPAN CATATAN"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

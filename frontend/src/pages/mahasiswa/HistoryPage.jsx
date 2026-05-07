@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
+  UserCheck,
 } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -27,24 +28,25 @@ import { useEntityList } from "@/lib/hooks/useEntityList";
 const ITEMS_PER_PAGE = 5;
 
 export default function HistoryPage() {
-  // Backend sudah scope Booking ke student yang login — tidak perlu filter student_email.
+  // ==========================================
+  // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
+  // ==========================================
   const { data: allBookings = [] } = useEntityList("Booking");
 
-  // State untuk Pagination dan Filter
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // Filter hanya status riwayat (completed/rejected/cancelled) + dropdown filter
   const bookings = allBookings
     .filter((b) => {
-      const isHistoryStatus = ["completed", "rejected", "cancelled"].includes(b.status);
+      const isHistoryStatus = ["completed", "rejected", "cancelled"].includes(
+        b.status,
+      );
       if (!isHistoryStatus) return false;
       if (statusFilter !== "all" && b.status !== statusFilter) return false;
       return true;
     })
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  // Logika Pagination (Harus dihitung setelah array di-filter)
   const totalPages = Math.ceil(bookings.length / ITEMS_PER_PAGE) || 1;
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const currentBookings = bookings.slice(
@@ -52,7 +54,6 @@ export default function HistoryPage() {
     startIndex + ITEMS_PER_PAGE,
   );
 
-  // Jika filter berubah, kembalikan ke halaman 1
   const handleFilterChange = (val) => {
     setStatusFilter(val);
     setCurrentPage(1);
@@ -66,39 +67,60 @@ export default function HistoryPage() {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   };
 
+  // ==========================================
+  // PERUBAHAN PADA UI/UX (FRONTEND KAKU, FORMAL, & LEGA)
+  // ==========================================
   return (
-    <div className="space-y-6">
-      {/* Header Halaman Formal & Filter Bar */}
-      <div className="bg-card border border-border p-5 rounded-md shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
+    <div className="space-y-6 max-w-7xl mx-auto pb-10">
+      {/* Header Halaman Formal & Filter Bar - Dibuat lega dan tidak mentok */}
+      <div className="bg-card border border-primary/15 p-6 sm:p-8 rounded-sm shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" />
+        <div className="pl-2">
+          <h1 className="text-2xl font-black text-primary uppercase tracking-tight">
             Riwayat Bimbingan
           </h1>
-          <p className="text-sm font-medium text-muted-foreground mt-1">
+          <p className="text-sm font-medium text-muted-foreground mt-2 border-l-2 border-primary/30 pl-3">
             Rekam jejak aktivitas bimbingan yang telah selesai, ditolak, atau
             dibatalkan.
           </p>
         </div>
 
         {/* Dropdown Filter Status */}
-        <div className="flex items-center gap-2 shrink-0">
-          <Filter className="w-4 h-4 text-muted-foreground hidden sm:block" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0 bg-muted/30 p-3 rounded-sm border border-border">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-primary" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              Filter Status:
+            </span>
+          </div>
           <Select value={statusFilter} onValueChange={handleFilterChange}>
-            <SelectTrigger className="w-full sm:w-[180px] h-9 rounded-sm border-border font-medium text-xs shadow-none">
-              <SelectValue placeholder="Semua Status" />
+            <SelectTrigger className="w-full sm:w-[200px] h-10 rounded-sm border-2 border-border font-bold text-xs uppercase tracking-wider shadow-none focus:ring-primary/50">
+              <SelectValue placeholder="SEMUA STATUS" />
             </SelectTrigger>
-            <SelectContent className="rounded-sm border-border">
-              <SelectItem value="all" className="text-xs font-bold">
-                Semua Status
+            <SelectContent className="rounded-sm border-2 border-border shadow-md">
+              <SelectItem
+                value="all"
+                className="text-xs font-bold uppercase tracking-wider focus:bg-primary/10"
+              >
+                SEMUA STATUS
               </SelectItem>
-              <SelectItem value="completed" className="text-xs font-medium">
-                Selesai
+              <SelectItem
+                value="completed"
+                className="text-xs font-bold uppercase tracking-wider focus:bg-primary/10"
+              >
+                SELESAI
               </SelectItem>
-              <SelectItem value="rejected" className="text-xs font-medium">
-                Ditolak
+              <SelectItem
+                value="rejected"
+                className="text-xs font-bold uppercase tracking-wider focus:bg-primary/10"
+              >
+                DITOLAK
               </SelectItem>
-              <SelectItem value="cancelled" className="text-xs font-medium">
-                Dibatalkan
+              <SelectItem
+                value="cancelled"
+                className="text-xs font-bold uppercase tracking-wider focus:bg-primary/10"
+              >
+                DIBATALKAN
               </SelectItem>
             </SelectContent>
           </Select>
@@ -106,71 +128,85 @@ export default function HistoryPage() {
       </div>
 
       {bookings.length === 0 ? (
-        <div className="border border-border rounded-md bg-card">
+        <div className="border border-border rounded-sm bg-card mt-6">
           <EmptyState
             icon={History}
             title={
-              statusFilter === "all" ? "Belum Ada Riwayat" : "Tidak Ada Data"
+              statusFilter === "all" ? "BELUM ADA RIWAYAT" : "TIDAK ADA DATA"
             }
             description={
               statusFilter === "all"
-                ? "Belum ada riwayat bimbingan yang tercatat di sistem."
-                : "Tidak ada riwayat bimbingan dengan status tersebut."
+                ? "Belum ada riwayat aktivitas bimbingan akademik yang tercatat di sistem."
+                : "Tidak ada riwayat bimbingan dengan status spesifik tersebut."
             }
           />
         </div>
       ) : (
-        <div className="space-y-4">
-          {/* Daftar Riwayat yang Ditampilkan per Halaman */}
-          <div className="space-y-3">
+        <div className="space-y-6 mt-6">
+          {/* Daftar Riwayat */}
+          <div className="space-y-4">
             {currentBookings.map((b) => (
               <Card
                 key={b.id}
-                className="rounded-md border border-border shadow-none bg-card"
+                className="rounded-sm border-2 border-primary/10 shadow-sm bg-card overflow-hidden transition-all hover:border-primary/30"
               >
                 <CardContent className="p-0">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4">
-                    <div className="flex items-start sm:items-center gap-4">
-                      {/* Ikon Kotak Solid */}
-                      <div className="w-12 h-12 rounded bg-muted border border-border flex items-center justify-center shrink-0">
-                        <CalendarDays className="w-5 h-5 text-muted-foreground" />
-                      </div>
+                  {/* Header Kartu Riwayat - Solid Bar */}
+                  <div className="bg-muted/40 border-b border-primary/10 px-5 py-3 flex items-center justify-between gap-4 border-l-4 border-l-primary">
+                    <div className="flex items-center gap-3">
+                      <CalendarDays className="w-5 h-5 text-primary" />
+                      <p className="text-sm font-black text-foreground uppercase tracking-wider">
+                        {format(new Date(b.date), "EEEE, dd MMMM yyyy", {
+                          locale: localeId,
+                        })}
+                      </p>
+                    </div>
+                    {/* Status Badge pindah ke header */}
+                    <StatusBadge status={b.status} />
+                  </div>
 
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-foreground">
-                          {format(new Date(b.date), "dd MMMM yyyy", {
-                            locale: localeId,
-                          })}
-                        </p>
-
-                        {/* Badge Atribut dengan gaya formal */}
-                        <div className="flex flex-wrap items-center gap-3 mt-1.5">
-                          <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 bg-muted/50 px-2 py-0.5 rounded-sm border border-border/50">
-                            <Clock className="w-3.5 h-3.5" />
-                            {b.start_time} - {b.end_time} WIB
+                  <div className="p-5 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+                    {/* Detail Informasi */}
+                    <div className="space-y-4 flex-1">
+                      {/* Waktu & Mode - Gaya Badge Kaku */}
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                            Waktu (WIB)
                           </span>
-                          <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 bg-muted/50 px-2 py-0.5 rounded-sm border border-border/50">
-                            {b.mode === "online" ? (
-                              <Video className="w-3.5 h-3.5" />
-                            ) : (
-                              <MapPin className="w-3.5 h-3.5" />
-                            )}
-                            {b.mode === "online"
-                              ? "Online (Daring)"
-                              : "Offline (Tatap Muka)"}
+                          <span className="text-xs font-mono font-black bg-primary/10 text-primary px-2.5 py-1 rounded-sm border border-primary/20 flex items-center gap-2">
+                            <Clock className="w-3.5 h-3.5" />
+                            {b.start_time} - {b.end_time}
                           </span>
                         </div>
 
-                        <p className="text-xs font-semibold text-foreground mt-2">
-                          Dosen:{" "}
-                          <span className="font-bold">{b.supervisor_name}</span>
-                        </p>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                            Metode Pelaksanaan
+                          </span>
+                          <span className="text-xs font-bold text-foreground uppercase bg-muted/50 px-2.5 py-1 rounded-sm border border-border flex items-center gap-2">
+                            {b.mode === "online" ? (
+                              <Video className="w-3.5 h-3.5 text-blue-600" />
+                            ) : (
+                              <MapPin className="w-3.5 h-3.5 text-amber-600" />
+                            )}
+                            {b.mode === "online"
+                              ? "DARING (ONLINE)"
+                              : "LURING (TATAP MUKA)"}
+                          </span>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Status Badge di sebelah kanan */}
-                    <div className="flex items-center justify-start sm:justify-end border-t border-border sm:border-0 pt-3 sm:pt-0 mt-2 sm:mt-0 w-full sm:w-auto">
-                      <StatusBadge status={b.status} />
+                      {/* Dosen Pembimbing */}
+                      <div className="flex items-center gap-2 text-xs pt-1">
+                        <UserCheck className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-bold text-muted-foreground uppercase tracking-wider">
+                          Dosen Pembimbing:
+                        </span>
+                        <span className="font-black text-foreground uppercase tracking-wide">
+                          {b.supervisor_name}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -178,34 +214,36 @@ export default function HistoryPage() {
             ))}
           </div>
 
-          {/* Kontrol Pagination Formal */}
-          <div className="flex items-center justify-between bg-card border border-border p-3 rounded-md shadow-sm mt-4">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Halaman {currentPage} dari {totalPages}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 px-3 rounded-sm shadow-none font-bold text-xs"
-                onClick={handlePrevPage}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Sebelumnya
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 px-3 rounded-sm shadow-none font-bold text-xs"
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-              >
-                Selanjutnya
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
+          {/* Kontrol Pagination Formal - Box Kaku */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between bg-muted/20 border-2 border-primary/10 p-4 rounded-sm mt-8 gap-4">
+              <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">
+                HALAMAN {currentPage} DARI {totalPages}
+              </p>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-10 px-4 rounded-sm shadow-none font-black text-[10px] uppercase tracking-wider border-2 border-border hover:bg-background"
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1.5" />
+                  SEBELUMNYA
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-10 px-4 rounded-sm shadow-none font-black text-[10px] uppercase tracking-wider border-2 border-border hover:bg-background"
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                >
+                  SELANJUTNYA
+                  <ChevronRight className="w-4 h-4 ml-1.5" />
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>
