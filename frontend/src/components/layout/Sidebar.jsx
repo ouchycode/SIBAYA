@@ -62,53 +62,46 @@ export default function Sidebar({ user, collapsed, onToggle: _onToggle }) {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 h-screen bg-primary text-primary-foreground flex flex-col z-40 border-r border-primary-foreground/10 transition-all duration-300",
-        collapsed ? "w-[64px]" : "w-[240px]",
+        "fixed left-0 top-0 h-screen bg-card text-foreground flex flex-col z-40 border-r border-border/50 shadow-[1px_0_10px_rgba(0,0,0,0.03)] transition-all duration-300",
+        collapsed ? "w-[72px]" : "w-[260px]",
       )}
     >
       {/* Logo */}
-      <div
-        className={cn(
-          "flex items-center gap-3 border-b border-primary-foreground/10",
-          collapsed ? "justify-center px-0 py-5" : "px-5 py-5",
-        )}
-      >
-        <div className="w-9 h-9 rounded-full bg-primary-foreground flex items-center justify-center shrink-0 border border-primary-foreground/20">
-          <img
-            src="/logo-uym.png"
-            alt="Logo UYM"
-            className="w-full h-full object-contain p-1.5 rounded-full"
-            onError={(e) => {
-              e.target.style.display = "none";
-              e.target.nextSibling.style.display = "block";
-            }}
-          />
-          <GraduationCap className="w-4 h-4 text-primary hidden" />
-        </div>
+    <div
+  className={cn(
+    "flex items-center gap-2.5 border-b border-primary-foreground/10 transition-all",
+    collapsed ? "justify-center px-0 py-4" : "px-5 py-4",
+  )}
+>
+  <img
+    src="/logo-uym.png"
+    alt="Logo UYM"
+    className="w-8 h-8 object-contain shrink-0"
+    onError={(e) => {
+      e.target.style.display = "none";
+      e.target.nextSibling.style.display = "block";
+    }}
+  />
+  <GraduationCap className="w-6 h-6 text-foreground hidden" />
 
-        {!collapsed && (
-          <div className="overflow-hidden">
-            <p className="font-bold text-sm text-primary-foreground leading-tight tracking-wide">
-              SIBAYA
-            </p>
-            <p className="text-[10px] text-primary-foreground/60 tracking-widest uppercase mt-0.5">
-              Univ. Yatsi Madani
-            </p>
-          </div>
-        )}
-      </div>
+  {!collapsed && (
+    <p className="font-semibold text-sm text-foreground leading-tight">
+      SIBAYA
+    </p>
+  )}
+</div>
 
       {/* Profile */}
-      <div className="border-b border-primary-foreground/10">
+      <div className="border-b border-border/50 relative">
         <button
           onClick={() => setIsProfileOpen(!isProfileOpen)}
           className={cn(
-            "w-full flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-primary-foreground/5 focus:outline-none",
+            "w-full flex items-center gap-3 px-6 py-4 transition-colors hover:bg-muted/50 focus:outline-none",
             collapsed && "justify-center px-0",
           )}
           title={collapsed ? "Profil" : undefined}
         >
-          <div className="w-8 h-8 rounded-full bg-primary-foreground/20 flex items-center justify-center shrink-0 border border-primary-foreground/15 overflow-hidden">
+          <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border overflow-hidden">
             {user?.photo ? (
               <img
                 src={user.photo}
@@ -116,7 +109,7 @@ export default function Sidebar({ user, collapsed, onToggle: _onToggle }) {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <span className="text-xs font-bold text-primary-foreground">
+              <span className="text-xs font-semibold text-muted-foreground">
                 {(user?.full_name || "U")[0].toUpperCase()}
               </span>
             )}
@@ -125,16 +118,16 @@ export default function Sidebar({ user, collapsed, onToggle: _onToggle }) {
           {!collapsed && (
             <>
               <div className="flex-1 min-w-0 text-left">
-                <p className="text-xs font-semibold text-primary-foreground truncate leading-tight">
+                <p className="text-xs font-semibold text-foreground truncate leading-tight">
                   {user?.full_name || "User Terdaftar"}
                 </p>
-                <p className="text-[10px] text-primary-foreground/60 uppercase tracking-wider mt-0.5">
+                <p className="text-[11px] text-muted-foreground mt-0.5 capitalize">
                   {roleLabel[role]}
                 </p>
               </div>
               <ChevronDown
                 className={cn(
-                  "w-3.5 h-3.5 text-primary-foreground/40 shrink-0 transition-transform duration-200",
+                  "w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200",
                   isProfileOpen && "rotate-180",
                 )}
               />
@@ -148,33 +141,33 @@ export default function Sidebar({ user, collapsed, onToggle: _onToggle }) {
             className={cn(
               "animate-in fade-in slide-in-from-top-1",
               collapsed
-                ? "absolute left-[68px] top-[108px] w-44 bg-primary border border-primary-foreground/10 shadow-xl z-50"
-                : "bg-primary-foreground/5 border-t border-primary-foreground/10",
+                ? "absolute left-[76px] top-2 w-48 bg-card border border-border/50 shadow-lg rounded-md z-50 overflow-hidden"
+                : "bg-muted/30 border-t border-border/50",
             )}
           >
             <Link
               to="/settings"
-              className="flex items-center gap-3 px-5 py-3 text-xs text-primary-foreground/75 hover:text-primary-foreground hover:bg-primary-foreground/5 transition-colors"
+              className="flex items-center gap-2.5 px-6 py-3 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
             >
-              <Settings className="w-3.5 h-3.5 shrink-0" />
-              Pengaturan Akun
+              <Settings className="w-4 h-4 text-muted-foreground shrink-0" />
+              Pengaturan Profil
             </Link>
-            <div className="h-px bg-primary-foreground/10 mx-4" />
+            <div className="h-px bg-border/50 mx-4" />
             <button
               onClick={() => sibaApi.auth.logout("/login")}
-              className="flex items-center w-full gap-3 px-5 py-3 text-xs font-semibold text-destructive hover:bg-destructive/10 transition-colors"
+              className="flex items-center w-full gap-2.5 px-6 py-3 text-xs font-medium text-destructive hover:bg-destructive/5 transition-colors"
             >
-              <LogOut className="w-3.5 h-3.5 shrink-0" />
-              Keluar Sistem
+              <LogOut className="w-4 h-4 shrink-0" />
+              Logout
             </button>
           </div>
         )}
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-3">
+      <nav className="flex-1 overflow-y-auto py-4 space-y-1 px-3">
         {!collapsed && (
-          <p className="px-5 pt-1 pb-2 text-[10px] font-semibold text-primary-foreground/40 uppercase tracking-widest">
+          <p className="px-3 pt-2 pb-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
             Menu Utama
           </p>
         )}
@@ -187,22 +180,22 @@ export default function Sidebar({ user, collapsed, onToggle: _onToggle }) {
               to={item.path}
               title={collapsed ? item.label : undefined}
               className={cn(
-                "flex items-center gap-3 py-2.5 text-sm transition-colors border-l-[3px]",
-                collapsed ? "justify-center px-0" : "px-5",
+                "flex items-center gap-3 py-2.5 text-sm transition-all rounded-md group",
+                collapsed ? "justify-center px-0" : "px-3",
                 isActive
-                  ? "border-accent bg-primary-foreground/10 text-primary-foreground font-semibold"
-                  : "border-transparent text-primary-foreground/65 hover:bg-primary-foreground/5 hover:text-primary-foreground font-medium",
+                  ? "bg-primary text-primary-foreground font-semibold"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground font-medium",
               )}
             >
               <item.icon
                 className={cn(
-                  "w-4 h-4 shrink-0",
-                  isActive ? "text-accent" : "text-primary-foreground/60",
+                  "w-[18px] h-[18px] shrink-0 transition-colors",
+                  isActive
+                    ? "text-primary-foreground"
+                    : "text-muted-foreground group-hover:text-foreground",
                 )}
               />
-              {!collapsed && (
-                <span className="truncate text-[13px]">{item.label}</span>
-              )}
+              {!collapsed && <span className="truncate">{item.label}</span>}
             </Link>
           );
         })}

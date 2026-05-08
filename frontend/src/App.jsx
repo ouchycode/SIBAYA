@@ -1,4 +1,3 @@
-import { Toaster } from "@/components/ui/toaster";
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClientInstance } from "@/lib/query-client";
@@ -14,6 +13,7 @@ import { AuthProvider, useAuth } from "@/lib/AuthContext";
 import UserNotRegisteredError from "@/components/UserNotRegisteredError";
 import { RoleBasedRoute } from "@/components/RoleBasedRoute";
 import { BookOpen, Loader2 } from "lucide-react";
+import { useRouteTitle } from "@/lib/hooks/useRouteTitle";
 
 import RoleRouter from "./pages/RoleRouter";
 import SetupRole from "./pages/SetupRole";
@@ -43,47 +43,24 @@ import AuditPage from "./pages/admin/AuditPage";
 
 const LoadingScreen = ({ message = "Memuat sistem dan autentikasi..." }) => (
   <div className="fixed inset-0 flex flex-col items-center justify-center bg-background z-50">
-    <div className="flex flex-col items-center text-center max-w-sm p-8 animate-in fade-in duration-500">
-      <div className="w-20 h-20 bg-background rounded-full flex items-center justify-center p-2 mb-6 border border-border shadow-sm">
-        <img
-          src="/logo-uym.png"
-          alt="Logo UYM"
-          className="w-full h-full object-contain"
-          onError={(e) => {
-            e.target.style.display = "none";
-            e.target.nextSibling.style.display = "flex";
-          }}
-        />
-        <div className="hidden bg-primary/10 w-full h-full rounded-full items-center justify-center">
-          <BookOpen className="w-8 h-8 text-primary" />
-        </div>
-      </div>
-      <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
-      <h2 className="text-xl font-black text-foreground tracking-wide">
-        SIBAYA
-      </h2>
-      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1 mb-4">
-        Universitas Yatsi Madani
-      </p>
-      <div className="h-px w-12 bg-border mb-4" />
+    <div className="flex flex-col items-center text-center max-w-sm p-8">
+      <Loader2 className="w-6 h-6 text-primary animate-spin mb-4" />
+
+      <div className="h-px w-12 bg-border/60 mb-4" />
       <p className="text-sm font-medium text-muted-foreground">{message}</p>
     </div>
   </div>
 );
 
 const AuthenticatedApp = () => {
+  useRouteTitle(); // Set dynamic document title
   const location = useLocation();
   const { isLoadingAuth, isLoadingPublicSettings, isAuthenticated, authError } =
     useAuth();
 
-  // Selalu izinkan halaman login diakses tanpa cek auth
-  if (location.pathname === "/login") {
-    return (
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    );
+  // Cek error spesifik (seperti akun tidak terdaftar)
+  if (authError?.type === "user_not_registered") {
+    return <UserNotRegisteredError />;
   }
 
   // Tampilkan loading selama auth masih dicek
@@ -91,15 +68,11 @@ const AuthenticatedApp = () => {
     return <LoadingScreen />;
   }
 
-  // Setelah loading selesai: cek error spesifik
-  if (authError?.type === "user_not_registered") {
-    return <UserNotRegisteredError />;
-  }
-
-  // Belum terautentikasi → langsung redirect ke /login (bukan 404)
+  // Belum terautentikasi → izinkan akses ke /login, sisanya redirect ke /login
   if (!isAuthenticated) {
     return (
       <Routes>
+        <Route path="/login" element={<LoginPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
@@ -156,7 +129,6 @@ function App() {
         <Router>
           <AuthenticatedApp />
         </Router>
-        <Toaster />
       </QueryClientProvider>
     </AuthProvider>
   );

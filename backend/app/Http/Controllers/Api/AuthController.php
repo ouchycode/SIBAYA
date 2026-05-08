@@ -29,9 +29,16 @@ class AuthController extends Controller
             ->orWhere('nip', $login)
             ->first();
 
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
+        if (!$user) {
+            return response()->json([
+                'message' => 'Pengguna tidak terdaftar.',
+                'error_type' => 'user_not_registered'
+            ], 404);
+        }
+
+        if (!Hash::check($validated['password'], $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Kredensial tidak valid.'],
+                'email' => ['Kata sandi yang Anda masukkan salah.'],
             ]);
         }
 

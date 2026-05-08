@@ -26,13 +26,16 @@ import {
 import { format, parseISO } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useEntityList } from "@/lib/hooks/useEntityList";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 
 const ITEMS_PER_PAGE = 5;
 
 export default function StudentLogbook() {
+  const { data: user } = useCurrentUser();
   const { data: allLogs = [] } = useEntityList("Logbook");
 
   const baseStudentLogs = allLogs
+    .filter((log) => log.student_email === user?.email)
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .map((log, index) => ({
       ...log,
@@ -76,44 +79,34 @@ export default function StudentLogbook() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-10">
-      <div className="bg-card border border-primary/15 p-6 sm:p-8 rounded-sm shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" />
-        <div className="pl-2">
-          <h1 className="text-2xl font-black text-primary uppercase tracking-tight">
+    <div className="space-y-5 max-w-7xl">
+      <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <p className="text-[11px] text-muted-foreground uppercase tracking-widest mb-1">
+            Logbook
+          </p>
+          <h1 className="text-base font-semibold text-foreground">
             Logbook Bimbingan
           </h1>
-          <p className="text-sm font-medium text-muted-foreground mt-2 border-l-2 border-primary/30 pl-3">
-            Buku catatan resmi hasil bimbingan dan pemantauan progres pengerjaan
-            Anda.
-          </p>
         </div>
 
-        {/* Dropdown Filter Tanggal (Bulan/Tahun) */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0 bg-muted/30 p-3 rounded-sm border border-border">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0">
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-primary" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <span className="text-[11px] font-medium text-muted-foreground">
               Filter:
             </span>
           </div>
           <Select value={dateFilter} onValueChange={handleFilterChange}>
-            <SelectTrigger className="w-full sm:w-[200px] h-10 rounded-sm border-2 border-border font-bold text-xs uppercase tracking-wider shadow-none focus:ring-primary/50">
-              <SelectValue placeholder="SEMUA TANGGAL" />
+            <SelectTrigger className="w-full sm:w-[180px] h-9 rounded text-xs bg-background shadow-none border-border/60 focus:ring-primary/20">
+              <SelectValue placeholder="Semua Tanggal" />
             </SelectTrigger>
-            <SelectContent className="rounded-sm border-2 border-border shadow-md">
-              <SelectItem
-                value="all"
-                className="text-xs font-bold uppercase tracking-wider focus:bg-primary/10"
-              >
-                SEMUA TANGGAL
+            <SelectContent className="rounded-md border-border/50 shadow-md">
+              <SelectItem value="all" className="text-xs">
+                Semua Tanggal
               </SelectItem>
               {uniqueMonths.map((month) => (
-                <SelectItem
-                  key={month}
-                  value={month}
-                  className="text-xs font-bold uppercase tracking-wider focus:bg-primary/10"
-                >
+                <SelectItem key={month} value={month} className="text-xs">
                   {format(parseISO(`${month}-01`), "MMMM yyyy", {
                     locale: localeId,
                   })}
@@ -125,166 +118,148 @@ export default function StudentLogbook() {
       </div>
 
       {filteredLogs.length === 0 ? (
-        <div className="border border-border rounded-sm bg-card mt-6">
-          <EmptyState
-            icon={BookOpen}
-            title={
-              dateFilter === "all"
-                ? "BELUM ADA CATATAN"
-                : "TIDAK ADA DATA PADA BULAN INI"
-            }
-            description={
-              dateFilter === "all"
-                ? "Logbook akan terisi secara otomatis setelah sesi bimbingan diselesaikan dan dicatat."
-                : "Tidak ada catatan logbook pada periode waktu yang Anda pilih."
-            }
-          />
-        </div>
+        <EmptyState
+          icon={BookOpen}
+          title={
+            dateFilter === "all"
+              ? "Belum ada catatan"
+              : "Tidak ada data pada bulan ini"
+          }
+          description={
+            dateFilter === "all"
+              ? "Logbook akan terisi secara otomatis setelah sesi bimbingan diselesaikan dan dicatat."
+              : "Tidak ada catatan logbook pada periode waktu yang Anda pilih."
+          }
+        />
       ) : (
-        <div className="space-y-6 mt-6">
-          <div className="space-y-6">
-            {currentLogs.map((log) => (
-              <Card
-                key={log.id}
-                className="rounded-sm border-2 border-primary/10 shadow-sm bg-card overflow-hidden transition-all hover:border-primary/30"
-              >
-                <CardContent className="p-0">
-                  {/* Header Logbook Card - Solid Bar */}
-                  <div className="bg-muted/40 border-b-2 border-primary/10 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-l-4 border-l-primary">
-                    <div className="flex items-center gap-4">
-                      {/* Kotak Nomor Jurnal */}
-                      <div className="w-12 h-12 rounded-sm bg-primary text-primary-foreground flex flex-col items-center justify-center border border-primary-foreground/20 shadow-inner shrink-0">
-                        <span className="text-[9px] font-black uppercase tracking-widest leading-none opacity-80 mb-0.5">
-                          Vol
-                        </span>
-                        <span className="text-lg font-black leading-none">
-                          {log.logNumber}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-black text-foreground uppercase tracking-wider">
-                          {format(new Date(log.date), "EEEE, dd MMMM yyyy", {
-                            locale: localeId,
-                          })}
-                        </p>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1 flex items-center gap-1.5 bg-background px-2 py-0.5 rounded-sm border border-border w-fit">
-                          <FileText className="w-3 h-3" /> JURNAL BIMBINGAN
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex shrink-0">
-                      {log.validated_by_supervisor ? (
-                        <Badge
-                          variant="outline"
-                          className="bg-emerald-50 text-emerald-700 border-emerald-300 gap-1.5 px-3 py-1.5 rounded-sm font-black uppercase tracking-widest text-[10px]"
-                        >
-                          <CheckCircle className="w-3.5 h-3.5" /> TELAH
-                          DIVALIDASI
-                        </Badge>
-                      ) : (
-                        <Badge
-                          variant="outline"
-                          className="bg-amber-50 text-amber-700 border-amber-300 gap-1.5 px-3 py-1.5 rounded-sm font-black uppercase tracking-widest text-[10px]"
-                        >
-                          <Clock className="w-3.5 h-3.5" /> MENUNGGU VALIDASI
-                        </Badge>
-                      )}
-                    </div>
+        <div className="space-y-4">
+          {currentLogs.map((log) => (
+            <div
+              key={log.id}
+              className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden"
+            >
+              {/* Header */}
+              <div className="px-5 py-3.5 border-b border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded bg-primary flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs font-bold text-primary-foreground">
+                      {log.logNumber}
+                    </span>
                   </div>
-
-                  {/* Body Logbook Card - Diberi padding luas */}
-                  <div className="p-6 space-y-6">
-                    {/* Progres Pengerjaan - Kotak Kaku */}
-                    {log.progress_percentage != null && (
-                      <div className="bg-background border-2 border-border p-4 rounded-sm">
-                        <div className="flex justify-between items-center mb-3">
-                          <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">
-                            Progres Pengerjaan
-                          </span>
-                          <span className="font-black text-primary bg-primary/10 px-3 py-1 rounded-sm border border-primary/20 text-xs">
-                            {log.progress_percentage}%
-                          </span>
-                        </div>
-                        <Progress
-                          value={log.progress_percentage}
-                          className="h-3 rounded-sm bg-muted-foreground/20"
-                        />
-                      </div>
-                    )}
-
-                    {/* Ringkasan & Revisi - Grid Tabular */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {log.summary && (
-                        <div className="space-y-2 border border-border rounded-sm p-4 bg-muted/10">
-                          <h4 className="text-[10px] font-black text-foreground uppercase tracking-widest flex items-center gap-2 border-b border-border/50 pb-2 mb-2">
-                            <div className="w-2 h-2 rounded-none bg-primary" />
-                            Ringkasan Bimbingan
-                          </h4>
-                          <p className="text-sm text-muted-foreground font-medium leading-relaxed text-justify whitespace-pre-wrap">
-                            {log.summary}
-                          </p>
-                        </div>
-                      )}
-
-                      {log.revisions && (
-                        <div className="space-y-2 border border-destructive/20 rounded-sm p-4 bg-destructive/5">
-                          <h4 className="text-[10px] font-black text-destructive uppercase tracking-widest flex items-center gap-2 border-b border-destructive/20 pb-2 mb-2">
-                            <PenTool className="w-3 h-3" />
-                            Catatan Revisi
-                          </h4>
-                          <p className="text-sm text-foreground font-medium leading-relaxed text-justify whitespace-pre-wrap">
-                            {log.revisions}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Target Selanjutnya - Aksen Banner */}
-                    {log.next_steps && (
-                      <div className="pt-2">
-                        <div className="p-4 rounded-sm bg-accent/5 border-2 border-accent/20">
-                          <h4 className="text-[10px] font-black text-accent-foreground uppercase tracking-widest flex items-center gap-2 mb-2">
-                            <Target className="w-3.5 h-3.5" />
-                            Target / Langkah Selanjutnya
-                          </h4>
-                          <p className="text-sm font-semibold text-foreground leading-relaxed">
-                            {log.next_steps}
-                          </p>
-                        </div>
-                      </div>
-                    )}
+                  <div>
+                    <h2 className="text-sm font-semibold text-foreground">
+                      {format(new Date(log.date), "EEEE, dd MMMM yyyy", {
+                        locale: localeId,
+                      })}
+                    </h2>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">
+                      Jurnal Bimbingan
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                </div>
 
+                <div className="flex shrink-0">
+                  {log.validated_by_supervisor ? (
+                    <span className="text-[10px] text-white bg-emerald-500 border border-emerald-600 px-2 py-0.5 rounded font-medium flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3" /> Telah Divalidasi
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-white bg-amber-500 border border-amber-600 px-2 py-0.5 rounded font-medium flex items-center gap-1">
+                      <Clock className="w-3 h-3" /> Menunggu Validasi
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="p-5 space-y-5">
+                {/* Progres Pengerjaan */}
+                {log.progress_percentage != null && (
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs font-medium text-foreground">
+                        Progres Pengerjaan
+                      </span>
+                      <span className="text-xs font-semibold text-primary">
+                        {log.progress_percentage}%
+                      </span>
+                    </div>
+                    <Progress
+                      value={log.progress_percentage}
+                      className="h-2 rounded bg-muted-foreground/10"
+                    />
+                  </div>
+                )}
+
+                {/* Ringkasan & Revisi */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {log.summary && (
+                    <div className="space-y-1.5 p-4 rounded bg-muted/30 border border-border/50">
+                      <h4 className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                        Ringkasan Bimbingan
+                      </h4>
+                      <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                        {log.summary}
+                      </p>
+                    </div>
+                  )}
+
+                  {log.revisions && (
+                    <div className="space-y-1.5 p-4 rounded bg-destructive/5 border border-destructive/10">
+                      <h4 className="text-[11px] font-semibold text-destructive flex items-center gap-1.5">
+                        <PenTool className="w-3.5 h-3.5" />
+                        Catatan Revisi
+                      </h4>
+                      <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                        {log.revisions}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Target Selanjutnya */}
+                {log.next_steps && (
+                  <div className="p-4 rounded bg-accent/5 border border-accent/10">
+                    <h4 className="text-[11px] font-semibold text-accent-foreground flex items-center gap-1.5 mb-1.5">
+                      <Target className="w-3.5 h-3.5" />
+                      Target Selanjutnya
+                    </h4>
+                    <p className="text-sm text-foreground leading-relaxed">
+                      {log.next_steps}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between bg-muted/20 border-2 border-primary/10 p-4 rounded-sm mt-8 gap-4">
-              <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">
-                HALAMAN {currentPage} DARI {totalPages}
+            <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] px-5 py-3.5 flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Halaman {currentPage} dari {totalPages}
               </p>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-10 px-4 rounded-sm shadow-none font-black text-[10px] uppercase tracking-wider border-2 border-border hover:bg-background"
+                  className="h-8 px-3 rounded text-xs shadow-none border-border/60 hover:bg-background"
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
                 >
-                  <ChevronLeft className="w-4 h-4 mr-1.5" />
-                  SEBELUMNYA
+                  <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+                  Sebelumnya
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-10 px-4 rounded-sm shadow-none font-black text-[10px] uppercase tracking-wider border-2 border-border hover:bg-background"
+                  className="h-8 px-3 rounded text-xs shadow-none border-border/60 hover:bg-background"
                   onClick={handleNextPage}
                   disabled={currentPage === totalPages}
                 >
-                  SELANJUTNYA
-                  <ChevronRight className="w-4 h-4 ml-1.5" />
+                  Selanjutnya
+                  <ChevronRight className="w-3.5 h-3.5 ml-1" />
                 </Button>
               </div>
             </div>

@@ -8,9 +8,9 @@ export function RoleBasedRoute({ allowedRoles }) {
   if (isLoading) {
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center bg-background z-50">
-        <div className="flex flex-col items-center text-center max-w-sm p-8 animate-in fade-in duration-500">
-          <div className="w-16 h-16 bg-primary/10 rounded-md flex items-center justify-center mb-6 border border-primary/20 shadow-sm">
-            <BookOpen className="w-8 h-8 text-primary" />
+        <div className="flex flex-col items-center text-center max-w-sm p-8">
+          <div className="w-16 h-16 bg-primary text-primary-foreground rounded-md flex items-center justify-center mb-6 border border-primary shadow-sm">
+            <BookOpen className="w-8 h-8 text-primary-foreground" />
           </div>
           <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
           <h2 className="text-xl font-black text-foreground tracking-wide">SIBAYA</h2>

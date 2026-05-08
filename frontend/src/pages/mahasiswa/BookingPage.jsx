@@ -53,12 +53,12 @@ export default function BookingPage() {
   );
 
   const availableSlots = slots.filter((s) => {
-    if (!supervisor) return false;
-    const isCorrectSupervisor =
-      s.supervisor_email === supervisor.supervisor_email;
-    const isFutureOrToday = startOfDay(parseISO(s.date)) >= today;
+    if (!supervisor || !s.date || !s.start_time) return false;
+    const isCorrectSupervisor = s.supervisor_email === supervisor.supervisor_email;
+    const slotDateTime = new Date(`${s.date}T${s.start_time}`);
+    const isFuture = slotDateTime > new Date();
     const isStillAvailable = s.is_available === true;
-    return isCorrectSupervisor && isFutureOrToday && isStillAvailable;
+    return isCorrectSupervisor && isFuture && isStillAvailable;
   });
 
   const grouped = availableSlots.reduce((acc, slot) => {
@@ -138,8 +138,8 @@ export default function BookingPage() {
         </div>
 
         <div className="flex items-center gap-3 bg-muted/50 rounded px-4 py-3 shrink-0">
-          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-            <UserCheck className="w-4 h-4 text-primary" />
+          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center shrink-0">
+            <UserCheck className="w-4 h-4 text-primary-foreground" />
           </div>
           <div>
             <p className="text-[10px] text-muted-foreground">
@@ -192,7 +192,7 @@ export default function BookingPage() {
                             {slot.start_time} – {slot.end_time}
                           </span>
                         </div>
-                        <span className="text-[10px] text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded font-medium dark:bg-green-950/40 dark:border-green-800 dark:text-green-400">
+                        <span className="text-[10px] text-white bg-green-500 border border-green-600 px-2 py-0.5 rounded font-medium">
                           Tersedia
                         </span>
                       </div>

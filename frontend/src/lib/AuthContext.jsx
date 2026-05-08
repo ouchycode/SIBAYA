@@ -79,6 +79,7 @@ export const AuthProvider = ({ children }) => {
         isLoadingAuth,
         isLoadingPublicSettings,
         authError,
+        setAuthError,
         appPublicSettings,
         authChecked,
         logout,

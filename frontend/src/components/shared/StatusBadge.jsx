@@ -6,27 +6,27 @@ import { Clock, CheckCircle, XCircle, Ban, CircleDot } from "lucide-react";
 const statusConfig = {
   pending: {
     label: "Menunggu",
-    color: "bg-amber-50 text-amber-700 border-amber-300",
+    color: "bg-amber-500 text-white border-amber-600",
     icon: Clock,
   },
   approved: {
     label: "Disetujui",
-    color: "bg-emerald-50 text-emerald-700 border-emerald-300",
+    color: "bg-emerald-500 text-white border-emerald-600",
     icon: CheckCircle,
   },
   rejected: {
     label: "Ditolak",
-    color: "bg-red-50 text-red-700 border-red-300",
+    color: "bg-red-500 text-white border-red-600",
     icon: XCircle,
   },
   cancelled: {
     label: "Dibatalkan",
-    color: "bg-muted text-muted-foreground border-border",
+    color: "bg-muted-foreground text-white border-muted",
     icon: Ban,
   },
   completed: {
     label: "Selesai",
-    color: "bg-primary/10 text-primary border-primary/30",
+    color: "bg-primary text-primary-foreground border-primary",
     icon: CircleDot,
   },
 };

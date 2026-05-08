@@ -25,8 +25,8 @@ export default function ExportPage() {
   const { data: mappingsAll = [] } = useEntityList("Mapping");
   const { data: logsAll = [] } = useEntityList("Logbook");
 
-  const mappings = mappingsAll.filter((m) => m.status === "active");
-  const logs = logsAll;
+  const mappings = mappingsAll.filter((m) => m.status === "active" && m.supervisor_email === user?.email);
+  const logs = logsAll.filter((l) => l.supervisor_email === user?.email);
   const filteredLogs =
     selectedStudent === "all"
       ? logs
@@ -70,54 +70,48 @@ export default function ExportPage() {
   // PERUBAHAN PADA UI/UX (FRONTEND KAKU & LEGA)
   // ==========================================
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-10">
-      {/* Header Halaman Formal & Lega */}
-      <div className="bg-card border border-primary/15 p-6 sm:p-8 rounded-sm shadow-sm relative overflow-hidden">
-        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" />
-        <div className="pl-2">
-          <h1 className="text-2xl font-black text-primary uppercase tracking-tight">
-            Rekap & Export Data
-          </h1>
-          <p className="text-sm font-medium text-muted-foreground mt-2 border-l-2 border-primary/30 pl-3">
-            Unduh rekapitulasi catatan logbook bimbingan mahasiswa untuk
-            keperluan arsip atau pelaporan akademik.
-          </p>
-        </div>
+    <div className="space-y-5 max-w-5xl mx-auto pb-10">
+      {/* Header Halaman */}
+      <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5">
+        <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest mb-1">
+          Laporan & Analitik
+        </p>
+        <h1 className="text-base font-semibold text-foreground">
+          Rekap & Export Data
+        </h1>
+      
       </div>
 
-      {/* Kotak Formulir Export - Kaku & Administratif */}
-      <Card className="rounded-sm border-2 border-primary/10 shadow-sm bg-card mt-6">
-        <CardHeader className="pb-4 pt-5 px-6 border-b-2 border-primary/10 bg-muted/40 border-l-4 border-l-primary">
-          <CardTitle className="text-sm font-black uppercase tracking-wider flex items-center gap-2 text-foreground">
-            <Database className="w-5 h-5 text-primary" />
+      {/* Kotak Formulir Export */}
+      <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] mt-4 overflow-hidden border border-border/50">
+        <div className="px-5 py-4 border-b border-border/50 bg-muted/10">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Database className="w-4 h-4 text-primary" />
             Parameter Unduhan Data
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6 p-6">
+          </h3>
+        </div>
+        <div className="space-y-5 p-5">
           {/* Dropdown Filter Mahasiswa */}
-          <div>
-            <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground block mb-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-foreground">
               Filter Berdasarkan Mahasiswa
             </Label>
             <Select value={selectedStudent} onValueChange={setSelectedStudent}>
-              <SelectTrigger className="h-10 rounded-sm border-2 border-border shadow-none bg-background font-bold text-xs uppercase tracking-wider focus:ring-primary/50">
+              <SelectTrigger className="h-9 rounded text-sm shadow-none border-border/60 focus:ring-primary/50">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="rounded-sm border-2 border-border shadow-md max-h-[250px]">
-                <SelectItem
-                  value="all"
-                  className="font-bold text-xs uppercase tracking-wider focus:bg-primary/10"
-                >
-                  SEMUA MAHASISWA BIMBINGAN
+              <SelectContent className="rounded-md border border-border shadow-md max-h-[250px]">
+                <SelectItem value="all" className="text-sm">
+                  Semua Mahasiswa Bimbingan
                 </SelectItem>
                 {mappings.map((m) => (
                   <SelectItem
                     key={m.id}
                     value={m.student_email}
-                    className="font-bold text-xs uppercase tracking-wider focus:bg-primary/10"
+                    className="text-sm"
                   >
                     {m.student_name}{" "}
-                    <span className="text-muted-foreground text-[10px] ml-1 tracking-widest">
+                    <span className="text-muted-foreground text-[10px] ml-1">
                       ({m.student_email})
                     </span>
                   </SelectItem>
@@ -126,42 +120,43 @@ export default function ExportPage() {
             </Select>
           </div>
 
-          {/* Panel Informasi - Tabular & Kaku */}
-          <div className="p-5 bg-muted/30 rounded-sm border-2 border-border">
-            <div className="flex items-center gap-2.5 mb-3 border-b border-border/50 pb-3">
-              <FileText className="w-5 h-5 text-primary" />
-              <span className="text-sm font-black text-foreground uppercase tracking-wide">
+          {/* Panel Informasi */}
+          <div className="p-4 bg-muted/30 rounded-md">
+            <div className="flex items-center gap-2.5 mb-2">
+              <FileText className="w-4 h-4 text-primary" />
+              <span className="text-sm font-semibold text-foreground">
                 {filteredLogs.length} Catatan Bimbingan Ditemukan
               </span>
             </div>
-            <p className="text-xs font-semibold text-muted-foreground leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Data yang diunduh mencakup Tanggal, Ringkasan, Revisi, Target, dan
               Progres Pengerjaan dalam format{" "}
-              <span className="font-black text-foreground bg-muted-foreground/10 px-2 py-0.5 rounded-sm border border-border">
-                .CSV
+              <span className="font-semibold text-foreground bg-muted p-0.5 rounded">
+                .csv
               </span>{" "}
               yang dapat dibuka dan diolah lebih lanjut melalui aplikasi
-              *spreadsheet* (seperti Microsoft Excel atau Google Sheets).
+              spreadsheet (seperti Microsoft Excel atau Google Sheets).
             </p>
           </div>
 
           {/* Area Tombol Aksi */}
-          <div className="border-t-2 border-border/50 pt-6 mt-4 flex flex-col sm:flex-row justify-end">
+          <div className="border-t border-border/50 pt-5 flex flex-col sm:flex-row justify-end">
             <Button
               onClick={handleExport}
               disabled={filteredLogs.length === 0 || exporting}
-              className="h-10 px-8 gap-2.5 rounded-sm font-black uppercase tracking-wider shadow-none w-full sm:w-auto"
+              size="sm"
+              className="h-8 px-4 rounded text-xs shadow-none w-full sm:w-auto"
             >
               {exporting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
               ) : (
-                <Download className="w-4 h-4" />
+                <Download className="w-3.5 h-3.5 mr-1.5" />
               )}
-              {exporting ? "MEMPROSES DATA..." : "DOWNLOAD REKAP (CSV)"}
+              {exporting ? "Memproses Data..." : "Download Rekap (CSV)"}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

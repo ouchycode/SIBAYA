@@ -47,55 +47,46 @@ export default function AdminDashboard() {
   // PERUBAHAN PADA UI/UX (FRONTEND KAKU & LEGA)
   // ==========================================
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-10">
-      {/* Header Halaman Formal & Lega */}
-      <div className="bg-card border-2 border-primary/10 p-6 sm:p-8 rounded-sm shadow-sm flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative overflow-hidden">
-        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" />
-
-        <div className="flex items-center gap-5 pl-2">
-          <div className="space-y-1.5">
-            <p className="text-[10px] font-black uppercase tracking-widest text-primary/70">
-              Portal Sistem Utama
-            </p>
-            <h1 className="text-2xl font-black text-foreground uppercase tracking-tight flex items-center gap-2">
-              <ShieldCheck className="w-7 h-7 text-primary shrink-0" />
-              Dashboard Administrator
-            </h1>
-            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border">
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                SELAMAT DATANG,{" "}
-                <span className="text-foreground font-black">
-                  {user?.full_name || "ADMIN TERDAFTAR"}
-                </span>
-              </p>
-            </div>
-          </div>
+    <div className="space-y-4 max-w-7xl">
+      {/* Header Halaman */}
+      <div className="bg-card rounded-md p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest mb-1">
+            Portal Admin
+          </p>
+          <h1 className="text-lg font-semibold text-foreground">
+            Dashboard Administrator
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Selamat datang, {user?.full_name || "Admin"}
+          </p>
         </div>
 
-        {/* Indikator Periode Akademik - Kotak Kaku */}
-        <div className="bg-background border-2 border-primary/10 p-4 rounded-sm shrink-0 shadow-sm flex flex-col items-start lg:items-end min-w-[220px]">
-          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">
-            Periode Akademik
-          </p>
+        <div className="shrink-0">
           {activePeriod ? (
-            <div className="bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-sm">
-              <p className="text-sm font-black text-primary uppercase tracking-widest">
-                {activePeriod.name}
+            <div className="flex flex-col sm:items-end">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5">
+                Periode Akademik Aktif
               </p>
+              <div className="bg-primary px-3 py-1.5 rounded text-sm font-medium text-primary-foreground">
+                {activePeriod.name}
+              </div>
             </div>
           ) : (
-            <div className="bg-destructive/10 border border-destructive/20 px-3 py-1.5 rounded-sm flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-destructive" />
-              <p className="text-xs font-black text-destructive uppercase tracking-widest">
-                TIDAK ADA PERIODE AKTIF
+            <div className="flex flex-col sm:items-end">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5">
+                Periode Akademik
               </p>
+              <div className="bg-destructive text-destructive-foreground px-3 py-1.5 rounded text-xs font-medium flex items-center gap-2">
+                <AlertCircle className="w-3.5 h-3.5" /> Tidak ada periode aktif
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Grid Statistik - Wrapper diberikan jarak */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-6">
+      {/* Grid Statistik */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatsCard
           title="Total Dosen"
           value={users.filter((u) => u.role === "dosen").length}
@@ -123,23 +114,23 @@ export default function AdminDashboard() {
       </div>
 
       {/* Grafik Beban Dosen */}
-      <Card className="rounded-sm border-2 border-primary/10 shadow-sm bg-card mt-6">
-        <CardHeader className="pb-4 pt-5 px-6 border-b-2 border-primary/10 bg-muted/40 border-l-4 border-l-primary">
-          <CardTitle className="text-sm font-black uppercase tracking-wider flex items-center gap-2 text-foreground">
-            <BarChart3 className="w-5 h-5 text-primary" />
+      <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+        <div className="px-5 py-4 border-b border-border/50">
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-muted-foreground" />
             Distribusi Beban Bimbingan Dosen
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
+          </h2>
+        </div>
+        <div className="p-5">
           {chartData.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-border rounded-sm bg-muted/10">
-              <div className="w-16 h-16 bg-muted border-2 border-border rounded-sm flex items-center justify-center mb-4">
-                <BarChart3 className="w-8 h-8 text-muted-foreground/40" />
+            <div className="flex flex-col items-center justify-center py-16 text-center bg-muted/10 rounded">
+              <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3">
+                <BarChart3 className="w-5 h-5 text-muted-foreground" />
               </div>
-              <p className="text-sm font-black text-foreground uppercase tracking-widest">
-                DATA BELUM TERSEDIA
+              <p className="text-sm font-medium text-foreground">
+                Data Belum Tersedia
               </p>
-              <p className="text-xs font-bold text-muted-foreground mt-1.5 uppercase tracking-wider">
+              <p className="text-xs text-muted-foreground mt-1">
                 Belum ada pemetaan (mapping) mahasiswa ke dosen yang aktif.
               </p>
             </div>
@@ -157,9 +148,8 @@ export default function AdminDashboard() {
                 <XAxis
                   dataKey="name"
                   tick={{
-                    fontSize: 10,
+                    fontSize: 11,
                     fill: "hsl(var(--muted-foreground))",
-                    fontWeight: 800,
                   }}
                   axisLine={false}
                   tickLine={false}
@@ -169,41 +159,37 @@ export default function AdminDashboard() {
                   tick={{
                     fontSize: 11,
                     fill: "hsl(var(--muted-foreground))",
-                    fontWeight: 800,
                   }}
                   axisLine={false}
                   tickLine={false}
                   allowDecimals={false}
                 />
                 <Tooltip
-                  cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }}
+                  cursor={{ fill: "hsl(var(--muted))", opacity: 0.3 }}
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
-                    borderRadius: "4px", // rounded-sm
-                    border: "2px solid hsl(var(--primary)/0.2)",
+                    borderRadius: "6px",
+                    border: "1px solid hsl(var(--border))",
                     boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                    fontSize: "10px",
-                    fontWeight: "900",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
+                    fontSize: "12px",
                   }}
                   itemStyle={{
                     color: "hsl(var(--primary))",
-                    fontWeight: "900",
+                    fontWeight: "500",
                   }}
                 />
                 <Bar
                   dataKey="count"
                   fill="hsl(var(--primary))"
-                  radius={[2, 2, 0, 0]}
+                  radius={[4, 4, 0, 0]}
                   name="Total Mahasiswa"
-                  barSize={48}
+                  barSize={40}
                 />
               </BarChart>
             </ResponsiveContainer>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import {
   Users,
+  User,
   CheckCircle,
   AlertTriangle,
   TrendingUp,
@@ -119,25 +120,22 @@ export default function MonitoringPage() {
   // PERUBAHAN PADA UI/UX (FRONTEND KAKU & LEGA)
   // ==========================================
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-10">
-      {/* Header Halaman Formal & Lega */}
-      <div className="bg-card border border-primary/15 p-6 sm:p-8 rounded-sm shadow-sm relative overflow-hidden">
-        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" />
-        <div className="pl-2">
-          <h1 className="text-2xl font-black text-primary uppercase tracking-tight">
-            Monitoring Mahasiswa Bimbingan
-          </h1>
-          <p className="text-sm font-medium text-muted-foreground mt-2 border-l-2 border-primary/30 pl-3">
-            Pantau progres pengerjaan dan tingkat keaktifan mahasiswa bimbingan
-            akademik Anda.
-          </p>
-        </div>
+    <div className="space-y-5 max-w-7xl mx-auto pb-10">
+      {/* Header Halaman */}
+      <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5">
+        <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest mb-1">
+          Laporan & Analitik
+        </p>
+        <h1 className="text-base font-semibold text-foreground">
+          Monitoring Mahasiswa Bimbingan
+        </h1>
+       
       </div>
 
-      {/* Cards Statistik - Wrapper tetap ada, isi komponen statscard tidak disentuh */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-6">
+      {/* Cards Statistik */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
         <StatsCard
-          title="Total Mahasiswa Bimbingan"
+          title="Total Bimbingan"
           value={mappings.length}
           icon={Users}
           color="blue"
@@ -149,48 +147,39 @@ export default function MonitoringPage() {
           color="green"
         />
         <StatsCard
-          title="Peringatan Mahasiswa Pasif"
+          title="Peringatan Pasif"
           value={inactiveCount}
           icon={AlertTriangle}
           color="red"
         />
       </div>
 
-      {/* Area Filter & Pencarian - Solid & Kotak Kaku */}
-      <div className="flex flex-col sm:flex-row gap-4 bg-muted/30 border-2 border-primary/10 p-4 rounded-sm shadow-sm mt-6">
+      {/* Area Filter & Pencarian */}
+      <div className="flex flex-col sm:flex-row gap-3 bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-4 mt-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="CARI NAMA, NIM, ATAU EMAIL MAHASISWA..."
+            placeholder="Cari nama, NIM, atau email mahasiswa..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-10 rounded-sm border-2 border-border shadow-none text-xs font-bold uppercase tracking-wider focus-visible:ring-primary/50 bg-background"
+            className="pl-9 h-9 rounded text-sm shadow-none border-border/60 focus-visible:ring-primary/50"
           />
         </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <Filter className="w-4 h-4 text-primary hidden sm:block" />
+        <div className="flex items-center gap-2 shrink-0">
+          <Filter className="w-4 h-4 text-muted-foreground hidden sm:block" />
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[200px] h-10 rounded-sm border-2 border-border font-bold text-xs uppercase tracking-wider shadow-none bg-background focus:ring-primary/50">
-              <SelectValue placeholder="SEMUA STATUS" />
+            <SelectTrigger className="w-full sm:w-[180px] h-9 rounded text-sm shadow-none border-border/60 focus:ring-primary/50">
+              <SelectValue placeholder="Semua Status" />
             </SelectTrigger>
-            <SelectContent className="rounded-sm border-2 border-border shadow-md">
-              <SelectItem
-                value="all"
-                className="text-xs font-bold uppercase tracking-wider focus:bg-primary/10"
-              >
-                SEMUA STATUS
+            <SelectContent className="rounded-md border border-border shadow-md">
+              <SelectItem value="all" className="text-sm">
+                Semua Status
               </SelectItem>
-              <SelectItem
-                value="active"
-                className="text-xs font-bold uppercase tracking-wider focus:bg-primary/10"
-              >
-                AKTIF (BIMBINGAN)
+              <SelectItem value="active" className="text-sm">
+                Aktif Bimbingan
               </SelectItem>
-              <SelectItem
-                value="inactive"
-                className="text-xs font-bold uppercase tracking-wider focus:bg-destructive/10 text-destructive"
-              >
-                PASIF (PERINGATAN)
+              <SelectItem value="inactive" className="text-sm text-destructive focus:text-destructive">
+                Pasif (Peringatan)
               </SelectItem>
             </SelectContent>
           </Select>
@@ -198,22 +187,22 @@ export default function MonitoringPage() {
       </div>
 
       {/* Tabel Data Mahasiswa */}
-      <Card className="rounded-sm border-2 border-primary/10 shadow-sm bg-card mt-6">
-        <CardHeader className="pb-4 pt-5 px-6 border-b-2 border-primary/10 bg-muted/40 border-l-4 border-l-primary">
-          <CardTitle className="text-sm font-black uppercase tracking-wider flex items-center gap-2 text-foreground">
-            <TrendingUp className="w-5 h-5 text-primary" />
+      <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] mt-4 overflow-hidden border border-border/50">
+        <div className="px-5 py-4 border-b border-border/50 bg-muted/10">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-primary" />
             Detail Progres Mahasiswa
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
+          </h3>
+        </div>
+        <div>
           {filteredStudents.length === 0 ? (
             <div className="p-8">
               <EmptyState
                 icon={searchQuery || statusFilter !== "all" ? Search : Users}
                 title={
                   searchQuery || statusFilter !== "all"
-                    ? "TIDAK ADA HASIL PENCARIAN"
-                    : "BELUM ADA MAHASISWA"
+                    ? "Tidak ada hasil pencarian"
+                    : "Belum ada mahasiswa"
                 }
                 description={
                   searchQuery || statusFilter !== "all"
@@ -223,57 +212,56 @@ export default function MonitoringPage() {
               />
             </div>
           ) : (
-            <div className="flex flex-col">
-              {currentStudents.map((s, index) => (
+            <div className="flex flex-col divide-y divide-border/50">
+              {currentStudents.map((s) => (
                 <div
                   key={s.id}
                   className={cn(
-                    "flex flex-col sm:flex-row sm:items-center justify-between p-6 gap-6 transition-all",
+                    "flex flex-col sm:flex-row sm:items-center justify-between p-5 gap-6 transition-all",
                     s.isInactive
-                      ? "bg-destructive/5 hover:bg-destructive/10 border-l-4 border-l-destructive"
-                      : "bg-background hover:bg-muted/30 border-l-4 border-l-transparent",
-                    index !== currentStudents.length - 1 &&
-                      "border-b border-border/60",
+                      ? "bg-destructive/5 hover:bg-destructive/10"
+                      : "bg-background hover:bg-muted/20"
                   )}
                 >
                   <div className="flex items-start gap-4 w-full sm:w-1/2">
                     {/* Avatar Inisial */}
                     <div
                       className={cn(
-                        "w-12 h-12 rounded-sm flex items-center justify-center shrink-0 border shadow-inner mt-1",
+                        "w-10 h-10 rounded-full flex items-center justify-center shrink-0 mt-0.5",
                         s.isInactive
-                          ? "bg-destructive/10 border-destructive/20 text-destructive"
-                          : "bg-primary/10 border-primary/20 text-primary",
+                          ? "bg-destructive/10 text-destructive"
+                          : "bg-primary/10 text-primary",
                       )}
                     >
-                      <span className="text-lg font-black uppercase">
+                      <span className="text-base font-bold uppercase">
                         {(s.student_name || "?")[0]}
                       </span>
                     </div>
 
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-black text-sm text-foreground uppercase tracking-wide truncate">
+                        <p className="font-semibold text-sm text-foreground truncate">
                           {s.student_name}
                         </p>
                         {s.isInactive && (
                           <Badge
                             variant="outline"
-                            className="bg-destructive/10 text-destructive border-destructive/30 gap-1 rounded-sm font-black uppercase tracking-widest text-[9px] px-2 py-0.5"
+                            className="bg-destructive/10 text-destructive border-0 gap-1 rounded font-medium text-[10px] px-2 py-0.5"
                           >
-                            <AlertCircle className="w-3 h-3" /> PASIF (30 HARI)
+                            <AlertCircle className="w-3 h-3" /> Pasif (30 Hari)
                           </Badge>
                         )}
                       </div>
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-muted/50 px-2 py-0.5 rounded-sm border border-border inline-block">
-                        {s.student_nim || "NIM TIDAK TERSEDIA"}
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5" />
+                        {s.student_nim || "NIM Tidak Tersedia"}
                       </p>
                       {s.thesis_title && (
-                        <div className="mt-2.5 p-3 bg-card border border-border rounded-sm">
-                          <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-1.5 border-b border-border/50 pb-1.5 mb-1.5">
+                        <div className="mt-2.5">
+                          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest flex items-center gap-1.5 mb-1">
                             <BookOpen className="w-3 h-3" /> Topik Bimbingan
                           </p>
-                          <p className="text-xs font-semibold text-foreground leading-snug">
+                          <p className="text-xs font-medium text-foreground leading-snug">
                             "{s.thesis_title}"
                           </p>
                         </div>
@@ -284,40 +272,38 @@ export default function MonitoringPage() {
                   {/* Area Progress Bar & Statistik */}
                   <div
                     className={cn(
-                      "w-full sm:w-1/3 shrink-0 flex flex-col justify-center p-4 rounded-sm border-2",
-                      s.isInactive
-                        ? "bg-background border-destructive/20"
-                        : "bg-card border-border shadow-sm",
+                      "w-full sm:w-1/3 shrink-0 flex flex-col justify-center p-4 rounded border border-border/50",
+                      s.isInactive ? "bg-background" : "bg-muted/10",
                     )}
                   >
-                    <div className="flex items-center justify-between gap-1 mb-2.5">
-                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                        Progres Pengerjaan
+                    <div className="flex items-center justify-between gap-1 mb-2">
+                      <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest">
+                        Progres
                       </span>
                       <span
                         className={cn(
-                          "text-xs font-black px-2 py-0.5 rounded-sm border",
+                          "text-xs font-semibold px-2 py-0.5 rounded",
                           s.isInactive
-                            ? "text-destructive bg-destructive/10 border-destructive/20"
-                            : "text-primary bg-primary/10 border-primary/20",
+                            ? "text-destructive bg-destructive/10"
+                            : "text-primary bg-primary/10",
                         )}
                       >
                         {s.latestProgress}%
                       </span>
                     </div>
-                    <div className="h-2.5 w-full bg-muted rounded-sm overflow-hidden mb-3">
+                    <div className="h-2 w-full bg-muted rounded-full overflow-hidden mb-3">
                       <div
                         className={cn(
-                          "h-full",
+                          "h-full rounded-full transition-all duration-500",
                           s.isInactive ? "bg-destructive" : "bg-primary",
                         )}
                         style={{ width: `${s.latestProgress}%` }}
                       />
                     </div>
-                    <div className="flex flex-col gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-t border-border/50 pt-2.5">
+                    <div className="flex flex-col gap-1.5 text-xs text-muted-foreground border-t border-border/50 pt-2.5 mt-2.5">
                       <div className="flex justify-between items-center">
                         <span>Total Sesi:</span>
-                        <span className="text-foreground">
+                        <span className="text-foreground font-medium">
                           {s.completedCount} Sesi Selesai
                         </span>
                       </div>
@@ -326,8 +312,8 @@ export default function MonitoringPage() {
                         <span
                           className={cn(
                             s.isInactive
-                              ? "text-destructive"
-                              : "text-foreground",
+                              ? "text-destructive font-semibold"
+                              : "text-foreground font-medium",
                           )}
                         >
                           {s.lastBookingDate
@@ -336,7 +322,7 @@ export default function MonitoringPage() {
                                 "dd MMM yyyy",
                                 { locale: localeId },
                               )
-                            : "BELUM PERNAH"}
+                            : "Belum Pernah"}
                         </span>
                       </div>
                     </div>
@@ -345,37 +331,37 @@ export default function MonitoringPage() {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Kontrol Pagination Formal - Box Kaku */}
+      {/* Kontrol Pagination */}
       {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between bg-muted/20 border-2 border-primary/10 p-4 rounded-sm mt-8 gap-4">
-          <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">
-            HALAMAN {currentPage} DARI {totalPages}
+        <div className="px-5 py-3.5 border border-border/50 rounded-md flex items-center justify-between bg-card mt-4">
+          <p className="text-xs text-muted-foreground">
+            Halaman {currentPage} dari {totalPages}
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              className="h-10 px-4 rounded-sm shadow-none font-black text-[10px] uppercase tracking-wider border-2 border-border hover:bg-background"
+              className="h-8 px-3 rounded text-xs shadow-none border-border/60 hover:bg-muted/40"
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
             >
-              <ChevronLeft className="w-4 h-4 mr-1.5" />
-              SEBELUMNYA
+              <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+              Sebelumnya
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="h-10 px-4 rounded-sm shadow-none font-black text-[10px] uppercase tracking-wider border-2 border-border hover:bg-background"
+              className="h-8 px-3 rounded text-xs shadow-none border-border/60 hover:bg-muted/40"
               onClick={() =>
                 setCurrentPage((prev) => Math.min(prev + 1, totalPages))
               }
               disabled={currentPage === totalPages}
             >
-              SELANJUTNYA
-              <ChevronRight className="w-4 h-4 ml-1.5" />
+              Selanjutnya
+              <ChevronRight className="w-3.5 h-3.5 ml-1" />
             </Button>
           </div>
         </div>

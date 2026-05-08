@@ -9,16 +9,16 @@ export default function StatsCard({
   color,
 }) {
   const colorMap = {
-    blue: { bg: "bg-blue-50 dark:bg-blue-950/40", icon: "text-blue-500" },
+    blue: { bg: "bg-blue-500 dark:bg-blue-600", icon: "text-white" },
     green: {
-      bg: "bg-emerald-50 dark:bg-emerald-950/40",
-      icon: "text-emerald-500",
+      bg: "bg-emerald-500 dark:bg-emerald-600",
+      icon: "text-white",
     },
-    amber: { bg: "bg-amber-50 dark:bg-amber-950/40", icon: "text-amber-500" },
-    red: { bg: "bg-red-50 dark:bg-red-950/40", icon: "text-red-500" },
+    amber: { bg: "bg-amber-500 dark:bg-amber-600", icon: "text-white" },
+    red: { bg: "bg-red-500 dark:bg-red-600", icon: "text-white" },
     purple: {
-      bg: "bg-purple-50 dark:bg-purple-950/40",
-      icon: "text-purple-500",
+      bg: "bg-purple-500 dark:bg-purple-600",
+      icon: "text-white",
     },
   };
 

@@ -39,14 +39,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 
 export default function AvailabilityPage() {
-  // ==========================================
-  // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
-  // ==========================================
+
   const queryClient = useQueryClient();
   const { data: user } = useCurrentUser();
   const { data: allSlots = [] } = useEntityList("Slot");
 
-  const slots = allSlots;
+  const slots = allSlots.filter((s) => s.supervisor_email === user?.email);
   const [showDialog, setShowDialog] = useState(false);
   const [form, setForm] = useState({
     date: "",
@@ -57,11 +55,10 @@ export default function AvailabilityPage() {
   });
 
   const activeSlots = slots.filter((slot) => {
-    const isFutureOrToday = !isBefore(
-      new Date(slot.date),
-      startOfDay(new Date()),
-    );
-    return isFutureOrToday && slot.is_available === true;
+    if (!slot.date || !slot.start_time) return false;
+    const slotDateTime = new Date(`${slot.date}T${slot.start_time}`);
+    const isFuture = slotDateTime > new Date();
+    return isFuture && slot.is_available === true;
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -113,37 +110,35 @@ export default function AvailabilityPage() {
   // PERUBAHAN PADA UI/UX (FRONTEND KAKU & LEGA)
   // ==========================================
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-10">
-      {/* Header Halaman Formal & Lega */}
-      <div className="bg-card border border-primary/15 p-6 sm:p-8 rounded-sm shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative overflow-hidden">
-        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" />
-        <div className="pl-2">
-          <h1 className="text-2xl font-black text-primary uppercase tracking-tight">
-            Manajemen Ketersediaan Dosen
-          </h1>
-          <p className="text-sm font-medium text-muted-foreground mt-2 border-l-2 border-primary/30 pl-3">
-            Atur dan rilis slot ketersediaan waktu bimbingan akademik untuk
-            mahasiswa Anda.
+    <div className="space-y-5 max-w-7xl mx-auto pb-10">
+      {/* Header Halaman */}
+      <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest mb-1">
+            Manajemen Jadwal
           </p>
+          <h1 className="text-base font-semibold text-foreground">
+            Ketersediaan Dosen
+          </h1>
+         
         </div>
         <Button
           onClick={() => setShowDialog(true)}
-          className="h-10 px-6 gap-2 rounded-sm font-black uppercase tracking-wider shadow-none border-2 border-transparent shrink-0"
+          size="sm"
+          className="h-8 px-4 rounded text-xs shadow-none shrink-0"
         >
-          <Plus className="w-4 h-4" /> TAMBAH SLOT
+          <Plus className="w-3.5 h-3.5 mr-1.5" /> Tambah Slot
         </Button>
       </div>
 
       {activeSlots.length === 0 ? (
-        <div className="border border-border rounded-sm bg-card mt-6">
-          <EmptyState
-            icon={CalendarDays}
-            title="BELUM ADA SLOT KETERSEDIAAN"
-            description="Tambahkan slot waktu agar mahasiswa dapat mengajukan reservasi bimbingan kepada Anda."
-          />
-        </div>
+        <EmptyState
+          icon={CalendarDays}
+          title="Belum ada slot ketersediaan"
+          description="Tambahkan slot waktu agar mahasiswa dapat mengajukan reservasi bimbingan kepada Anda."
+        />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
           {activeSlots
             .sort((a, b) => new Date(a.date) - new Date(b.date))
             .map((slot) => {
@@ -152,164 +147,146 @@ export default function AvailabilityPage() {
                 !slot.is_available || activeBookingsCount >= slot.max_students;
 
               return (
-                <Card
+                <div
                   key={slot.id}
                   className={cn(
-                    "rounded-sm border-2 shadow-sm overflow-hidden flex flex-col transition-all",
-                    isFull
-                      ? "border-border bg-muted/20 opacity-80"
-                      : "border-primary/10 bg-card hover:border-primary/30",
+                    "rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] flex flex-col overflow-hidden border border-border/50 transition-all",
+                    isFull ? "bg-muted/30 opacity-80" : "bg-card",
                   )}
                 >
-                  <CardContent className="p-0 flex flex-col h-full">
-                    {/* Header Slot Card - Solid Tabular */}
-                    <div
-                      className={cn(
-                        "border-b-2 px-5 py-4 flex items-start justify-between border-l-4",
-                        isFull
-                          ? "bg-muted/40 border-border border-l-muted-foreground"
-                          : "bg-muted/30 border-primary/10 border-l-primary",
-                      )}
-                    >
-                      <div className="flex items-center gap-4">
-                        {/* Ikon Kalender Ala Dokumen */}
-                        <div
+                  {/* Header Slot Card */}
+                  <div
+                    className={cn(
+                      "px-4 py-3 flex items-start justify-between border-b border-border/50",
+                      isFull ? "bg-muted/50" : "bg-muted/20",
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Ikon Kalender Ala Dokumen */}
+                      <div
+                        className={cn(
+                          "w-10 h-10 rounded flex flex-col items-center justify-center shrink-0 border border-border/50",
+                          isFull
+                            ? "bg-background text-muted-foreground"
+                            : "bg-primary text-primary-foreground border-transparent",
+                        )}
+                      >
+                        <span className="text-[9px] font-semibold uppercase tracking-wider mb-0.5">
+                          {format(new Date(slot.date), "MMM", {
+                            locale: localeId,
+                          })}
+                        </span>
+                        <span className="text-base font-bold leading-none">
+                          {format(new Date(slot.date), "dd")}
+                        </span>
+                      </div>
+                      <div>
+                        <p
                           className={cn(
-                            "w-12 h-12 rounded-sm flex flex-col items-center justify-center shrink-0 border shadow-inner",
+                            "font-semibold text-sm",
                             isFull
-                              ? "bg-muted text-muted-foreground border-border"
-                              : "bg-primary text-primary-foreground border-primary-foreground/20",
+                              ? "text-muted-foreground"
+                              : "text-foreground",
                           )}
                         >
-                          <span className="text-[10px] font-black uppercase tracking-widest leading-none opacity-80 mb-0.5">
-                            {format(new Date(slot.date), "MMM", {
-                              locale: localeId,
-                            })}
-                          </span>
-                          <span className="text-lg font-black leading-none">
-                            {format(new Date(slot.date), "dd")}
-                          </span>
-                        </div>
-                        <div>
-                          <p
-                            className={cn(
-                              "font-black text-sm uppercase tracking-wider",
-                              isFull
-                                ? "text-muted-foreground"
-                                : "text-foreground",
-                            )}
-                          >
-                            {format(new Date(slot.date), "EEEE", {
-                              locale: localeId,
-                            })}
-                          </p>
-                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
-                            {format(new Date(slot.date), "dd MMMM yyyy", {
-                              locale: localeId,
-                            })}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Tombol Hapus (Hanya muncul jika belum ada booking) */}
-                      {activeBookingsCount === 0 && (
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-8 w-8 text-destructive border-destructive/20 hover:border-destructive hover:bg-destructive hover:text-destructive-foreground rounded-sm shrink-0 shadow-none bg-destructive/5 transition-colors"
-                          onClick={() => handleDelete(slot.id)}
-                          disabled={isDeletingId === slot.id}
-                          title="Hapus Slot"
-                        >
-                          {isDeletingId === slot.id ? (
-                            <div className="w-4 h-4 border-2 border-destructive border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                        </Button>
-                      )}
-                    </div>
-
-                    {/* Body Card (Detail Waktu & Lokasi) */}
-                    <div className="p-5 space-y-4 flex-1">
-                      {/* Waktu & Metode (Grid Kotak) */}
-                      <div className="grid grid-cols-1 gap-3">
-                        <div className="flex items-center gap-3 bg-background border-2 border-border p-2.5 rounded-sm">
-                          <div
-                            className={cn(
-                              "w-7 h-7 rounded-sm flex items-center justify-center border",
-                              isFull
-                                ? "bg-muted border-border"
-                                : "bg-primary/10 border-primary/20",
-                            )}
-                          >
-                            <Clock
-                              className={cn(
-                                "w-4 h-4",
-                                isFull
-                                  ? "text-muted-foreground"
-                                  : "text-primary",
-                              )}
-                            />
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
-                              Waktu (WIB)
-                            </span>
-                            <span className="text-sm font-mono font-black text-foreground">
-                              {slot.start_time} - {slot.end_time}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 bg-muted/30 border border-border/50 p-2.5 rounded-sm">
-                          <div className="w-7 h-7 rounded-sm bg-muted border border-border flex items-center justify-center">
-                            {slot.mode === "online" ? (
-                              <Video className="w-4 h-4 text-muted-foreground" />
-                            ) : (
-                              <MapPin className="w-4 h-4 text-muted-foreground" />
-                            )}
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
-                              Metode / Lokasi
-                            </span>
-                            <span className="text-xs font-bold text-foreground truncate uppercase">
-                              {slot.mode === "online" ? "DARING" : "LURING"}
-                              {slot.location ? ` • ${slot.location}` : ""}
-                            </span>
-                          </div>
-                        </div>
+                          {format(new Date(slot.date), "EEEE", {
+                            locale: localeId,
+                          })}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground uppercase tracking-widest mt-0.5">
+                          {format(new Date(slot.date), "dd MMMM yyyy", {
+                            locale: localeId,
+                          })}
+                        </p>
                       </div>
                     </div>
 
-                    {/* Footer Card (Kuota & Status) */}
-                    <div className="p-5 pt-0 mt-auto">
-                      <div className="flex items-center justify-between pt-4 border-t-2 border-border/50">
-                        <div className="flex items-center gap-2 bg-muted/50 px-2.5 py-1.5 rounded-sm border border-border">
-                          <Users className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-xs font-black text-foreground">
-                            {activeBookingsCount}
-                            <span className="text-muted-foreground font-bold">
-                              /{slot.max_students}
-                            </span>
-                          </span>
-                        </div>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "rounded-sm font-black uppercase text-[10px] px-2.5 py-1 tracking-widest",
-                            !isFull
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                              : "bg-muted text-muted-foreground border-border",
-                          )}
-                        >
-                          {!isFull ? "TERSEDIA" : "PENUH / TUTUP"}
-                        </Badge>
+                    {/* Tombol Hapus (Hanya muncul jika belum ada booking) */}
+                    {activeBookingsCount === 0 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive rounded shrink-0 shadow-none -mr-1"
+                        onClick={() => handleDelete(slot.id)}
+                        disabled={isDeletingId === slot.id}
+                        title="Hapus Slot"
+                      >
+                        {isDeletingId === slot.id ? (
+                          <div className="w-3.5 h-3.5 border-2 border-destructive border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Body Card (Detail Waktu & Lokasi) */}
+                  <div className="p-4 space-y-3 flex-1">
+                    {/* Waktu & Metode (Grid Kotak) */}
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className={cn(
+                          "w-6 h-6 rounded flex items-center justify-center bg-muted",
+                        )}
+                      >
+                        <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">
+                          Waktu (WIB)
+                        </span>
+                        <span className="text-xs font-semibold text-foreground">
+                          {slot.start_time} - {slot.end_time}
+                        </span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-6 h-6 rounded flex items-center justify-center bg-muted">
+                        {slot.mode === "online" ? (
+                          <Video className="w-3.5 h-3.5 text-muted-foreground" />
+                        ) : (
+                          <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">
+                          Metode / Lokasi
+                        </span>
+                        <span className="text-xs font-medium text-foreground truncate">
+                          {slot.mode === "online" ? "Daring" : "Luring"}
+                          {slot.location ? ` • ${slot.location}` : ""}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer Card (Kuota & Status) */}
+                  <div className="px-4 py-3 border-t border-border/50 mt-auto bg-muted/10">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <Users className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="font-semibold text-foreground">
+                          {activeBookingsCount}
+                          <span className="text-muted-foreground font-normal">
+                            /{slot.max_students}
+                          </span>
+                        </span>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "rounded font-medium text-[10px] px-2 py-0.5 border-0",
+                          !isFull
+                            ? "bg-emerald-50 text-emerald-600"
+                            : "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {!isFull ? "Tersedia" : "Penuh / Tutup"}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
               );
             })}
         </div>
@@ -317,29 +294,29 @@ export default function AvailabilityPage() {
 
       {/* Dialog Tambah Slot Formal */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="rounded-sm border-2 border-primary/20 sm:max-w-md p-0 overflow-hidden bg-card">
-          <DialogHeader className="px-6 py-5 border-b border-primary/10 bg-muted/40">
-            <DialogTitle className="text-base font-black uppercase tracking-wide text-primary">
+        <DialogContent className="rounded-md border-0 shadow-[0_8px_30px_rgba(0,0,0,0.12)] sm:max-w-md p-0 overflow-hidden bg-card">
+          <DialogHeader className="px-5 py-4 border-b border-border/50">
+            <DialogTitle className="text-sm font-semibold text-foreground">
               Formulir Tambah Slot
             </DialogTitle>
           </DialogHeader>
 
-          <div className="px-6 py-6 space-y-5">
+          <div className="px-5 py-4 space-y-4">
             <div>
-              <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+              <Label className="text-xs font-medium text-foreground">
                 Tanggal Bimbingan
               </Label>
               <Input
                 type="date"
                 value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className="mt-1.5 rounded-sm border-2 border-border focus-visible:ring-primary shadow-none h-10 font-medium px-3 uppercase"
+                className="mt-1.5 rounded border-border/60 focus-visible:ring-primary shadow-none h-9 text-sm"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                <Label className="text-xs font-medium text-foreground">
                   Jam Mulai
                 </Label>
                 <Input
@@ -348,11 +325,11 @@ export default function AvailabilityPage() {
                   onChange={(e) =>
                     setForm({ ...form, start_time: e.target.value })
                   }
-                  className="mt-1.5 rounded-sm border-2 border-border focus-visible:ring-primary shadow-none h-10 font-mono font-bold px-3"
+                  className="mt-1.5 rounded border-border/60 focus-visible:ring-primary shadow-none h-9 text-sm"
                 />
               </div>
               <div>
-                <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                <Label className="text-xs font-medium text-foreground">
                   Jam Selesai
                 </Label>
                 <Input
@@ -361,33 +338,27 @@ export default function AvailabilityPage() {
                   onChange={(e) =>
                     setForm({ ...form, end_time: e.target.value })
                   }
-                  className="mt-1.5 rounded-sm border-2 border-border focus-visible:ring-primary shadow-none h-10 font-mono font-bold px-3"
+                  className="mt-1.5 rounded border-border/60 focus-visible:ring-primary shadow-none h-9 text-sm"
                 />
               </div>
             </div>
 
             <div>
-              <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+              <Label className="text-xs font-medium text-foreground">
                 Metode Pelaksanaan
               </Label>
               <Select
                 value={form.mode}
                 onValueChange={(v) => setForm({ ...form, mode: v })}
               >
-                <SelectTrigger className="mt-1.5 rounded-sm border-2 border-border focus-visible:ring-primary shadow-none h-10 font-bold text-xs uppercase px-3">
+                <SelectTrigger className="mt-1.5 rounded border-border/60 focus-visible:ring-primary shadow-none h-9 text-sm">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-sm border-2 border-border shadow-md">
-                  <SelectItem
-                    value="offline"
-                    className="font-bold text-xs uppercase tracking-wider focus:bg-primary/10"
-                  >
+                <SelectContent className="rounded-md border border-border shadow-md">
+                  <SelectItem value="offline" className="text-sm">
                     Luring (Tatap Muka)
                   </SelectItem>
-                  <SelectItem
-                    value="online"
-                    className="font-bold text-xs uppercase tracking-wider focus:bg-primary/10"
-                  >
+                  <SelectItem value="online" className="text-sm">
                     Daring (Online)
                   </SelectItem>
                 </SelectContent>
@@ -395,7 +366,7 @@ export default function AvailabilityPage() {
             </div>
 
             <div>
-              <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+              <Label className="text-xs font-medium text-foreground">
                 {form.mode === "online"
                   ? "Link Meeting (Tautan)"
                   : "Lokasi Ruangan"}
@@ -408,27 +379,29 @@ export default function AvailabilityPage() {
                     ? "https://meet.google.com/..."
                     : "Misal: Ruang Dosen Gedung A Lt.2"
                 }
-                className="mt-1.5 rounded-sm border-2 border-border focus-visible:ring-primary shadow-none h-10 font-medium px-3"
+                className="mt-1.5 rounded border-border/60 focus-visible:ring-primary shadow-none h-9 text-sm"
               />
             </div>
           </div>
 
-          <DialogFooter className="px-6 py-4 border-t border-primary/10 bg-muted/20 flex flex-row justify-end gap-3">
+          <DialogFooter className="px-5 py-3.5 border-t border-border/50 bg-muted/20 flex flex-row justify-end gap-2">
             <Button
               variant="outline"
-              className="rounded-sm shadow-none font-bold uppercase tracking-wider text-xs border-border px-5"
+              size="sm"
+              className="rounded text-xs"
               onClick={() => setShowDialog(false)}
             >
-              BATALKAN
+              Batal
             </Button>
             <Button
-              className="rounded-sm shadow-none font-bold uppercase tracking-wider text-xs px-5"
+              size="sm"
+              className="rounded text-xs"
               onClick={handleCreate}
               disabled={
                 !form.date || !form.start_time || !form.end_time || isSubmitting
               }
             >
-              {isSubmitting ? "MEMPROSES..." : "SIMPAN SLOT"}
+              {isSubmitting ? "Memproses..." : "Simpan Slot"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -30,6 +30,7 @@ import {
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { toast } from "sonner";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useEntityList } from "@/lib/hooks/useEntityList";
 import { sibaApi } from "@/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
@@ -42,6 +43,7 @@ export default function RequestsPage() {
   // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
   // ==========================================
   const queryClient = useQueryClient();
+  const { data: user } = useCurrentUser();
   const { data: allBookings = [] } = useEntityList("Booking");
 
   const [activeTab, setActiveTab] = useState("pending");
@@ -51,9 +53,9 @@ export default function RequestsPage() {
   const [rejectDialog, setRejectDialog] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
 
-  const bookings = allBookings.sort(
-    (a, b) => new Date(b.date) - new Date(a.date),
-  );
+  const bookings = allBookings
+    .filter((b) => b.supervisor_email === user?.email)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 
   const updateStatus = async (id, status, reason) => {
     setLoadingId(id);
@@ -106,243 +108,237 @@ export default function RequestsPage() {
     if (totalPages <= 1) return null;
 
     return (
-      <div className="flex flex-col sm:flex-row items-center justify-between bg-muted/20 border-2 border-primary/10 p-4 rounded-sm mt-8 gap-4">
-        <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">
-          HALAMAN {currentPage} DARI {totalPages}
+      <div className="px-5 py-3.5 border border-border/50 rounded-md flex items-center justify-between bg-card mt-4">
+        <p className="text-xs text-muted-foreground">
+          Halaman {currentPage} dari {totalPages}
         </p>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            className="h-10 px-4 rounded-sm shadow-none font-black text-[10px] uppercase tracking-wider border-2 border-border hover:bg-background"
+            className="h-8 px-3 rounded text-xs shadow-none border-border/60 hover:bg-muted/40"
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
           >
-            <ChevronLeft className="w-4 h-4 mr-1.5" />
-            SEBELUMNYA
+            <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+            Sebelumnya
           </Button>
           <Button
             variant="outline"
             size="sm"
-            className="h-10 px-4 rounded-sm shadow-none font-black text-[10px] uppercase tracking-wider border-2 border-border hover:bg-background"
+            className="h-8 px-3 rounded text-xs shadow-none border-border/60 hover:bg-muted/40"
             onClick={() =>
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }
             disabled={currentPage === totalPages}
           >
-            SELANJUTNYA
-            <ChevronRight className="w-4 h-4 ml-1.5" />
+            Selanjutnya
+            <ChevronRight className="w-3.5 h-3.5 ml-1" />
           </Button>
         </div>
       </div>
     );
   };
 
-  // ==========================================
-  // PERUBAHAN PADA UI/UX (FRONTEND KAKU & LEGA)
-  // ==========================================
   const BookingCard = ({ booking, showActions }) => (
-    <Card className="rounded-sm border-2 border-primary/10 shadow-sm mb-4 bg-card overflow-hidden hover:border-primary/30 transition-all">
-      <CardContent className="p-0">
-        {/* Header Kartu - Identitas Mahasiswa & Status */}
-        <div className="bg-muted/40 border-b border-primary/10 px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-l-4 border-l-primary">
-          <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-sm bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-              <User className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">
-                Pengaju Bimbingan
-              </p>
-              <p className="text-sm font-black text-foreground uppercase tracking-wide">
-                {booking.student_name}
-              </p>
-            </div>
+    <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] mb-4 overflow-hidden">
+      {/* Header Kartu */}
+      <div className="bg-muted/20 border-b border-border/50 px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
+            <User className="w-5 h-5 text-primary-foreground" />
           </div>
-          <div className="flex shrink-0">
-            <StatusBadge status={booking.status} />
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              {booking.student_name}
+            </p>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-widest mt-0.5">
+              Pengaju Bimbingan
+            </p>
           </div>
         </div>
+        <div className="flex shrink-0">
+          <StatusBadge status={booking.status} />
+        </div>
+      </div>
 
-        {/* Body Kartu - Detail Jadwal */}
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {/* Informasi Waktu */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2.5 bg-background border border-border px-3 py-2 rounded-sm">
-                <CalendarDays className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-xs font-bold text-foreground uppercase tracking-wider">
-                  {format(new Date(booking.date), "dd MMMM yyyy", {
-                    locale: localeId,
-                  })}
-                </span>
-              </div>
-              <div className="flex items-center gap-2.5 bg-background border border-border px-3 py-2 rounded-sm">
-                <Clock className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-xs font-mono font-black text-foreground uppercase tracking-wider">
-                  {booking.start_time} - {booking.end_time} WIB
-                </span>
-              </div>
+      {/* Body Kartu */}
+      <div className="p-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {/* Informasi Waktu */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <CalendarDays className="w-4 h-4 text-muted-foreground shrink-0" />
+              <span className="text-sm text-foreground">
+                {format(new Date(booking.date), "dd MMMM yyyy", {
+                  locale: localeId,
+                })}
+              </span>
             </div>
-
-            {/* Informasi Metode */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2.5 bg-muted/30 border border-border px-3 py-2 rounded-sm">
-                {booking.mode === "online" ? (
-                  <Video className="w-4 h-4 text-blue-600 shrink-0" />
-                ) : (
-                  <MapPin className="w-4 h-4 text-amber-600 shrink-0" />
-                )}
-                <span className="text-xs font-bold text-foreground uppercase tracking-wider">
-                  {booking.mode === "online"
-                    ? "DARING (ONLINE)"
-                    : "LURING (TATAP MUKA)"}
-                </span>
-              </div>
-            </div>
-
-            {/* Kolom Catatan / Alasan */}
-            <div className="space-y-3 lg:col-span-3">
-              {booking.notes && (
-                <div className="p-4 bg-accent/5 border border-accent/20 rounded-sm">
-                  <p className="text-[10px] font-black text-accent-foreground uppercase tracking-widest flex items-center gap-2 border-b border-accent/10 pb-2 mb-2">
-                    <FileText className="w-3.5 h-3.5" />
-                    Catatan Pengajuan
-                  </p>
-                  <p className="text-sm font-medium text-foreground leading-relaxed">
-                    {booking.notes}
-                  </p>
-                </div>
-              )}
-
-              {booking.reject_reason && (
-                <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-sm">
-                  <p className="text-[10px] font-black text-destructive uppercase tracking-widest flex items-center gap-2 border-b border-destructive/10 pb-2 mb-2">
-                    <AlertOctagon className="w-3.5 h-3.5" />
-                    Alasan Penolakan Dosen
-                  </p>
-                  <p className="text-sm font-medium text-destructive/90 leading-relaxed">
-                    {booking.reject_reason}
-                  </p>
-                </div>
-              )}
+            <div className="flex items-center gap-2.5">
+              <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+              <span className="text-sm text-foreground">
+                {booking.start_time} - {booking.end_time} WIB
+              </span>
             </div>
           </div>
-        </div>
 
-        {/* Footer Kartu - Aksi (Jika ada) */}
-        {(showActions || booking.status === "approved") && (
-          <div className="bg-muted/20 border-t border-border px-6 py-4 flex flex-col sm:flex-row justify-end gap-3">
-            {showActions && (
-              <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-10 px-5 rounded-sm font-black uppercase tracking-wider border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground shadow-none"
-                  onClick={() => setRejectDialog(booking)}
-                  disabled={loadingId === booking.id}
-                >
-                  <XCircle className="w-4 h-4 mr-2" /> TOLAK
-                </Button>
-                <Button
-                  size="sm"
-                  className="h-10 px-5 rounded-sm font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white shadow-none"
-                  onClick={() => updateStatus(booking.id, "approved")}
-                  disabled={loadingId === booking.id}
-                >
-                  {loadingId === booking.id ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                  )}
-                  SETUJUI JADWAL
-                </Button>
-              </>
+          {/* Informasi Metode */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              {booking.mode === "online" ? (
+                <Video className="w-4 h-4 text-muted-foreground shrink-0" />
+              ) : (
+                <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+              )}
+              <span className="text-sm text-foreground">
+                {booking.mode === "online" ? "Daring (Online)" : "Luring (Tatap Muka)"}
+                {booking.location && booking.mode !== "online" ? ` • ${booking.location}` : ""}
+              </span>
+            </div>
+          </div>
+
+          {/* Kolom Catatan / Alasan */}
+          <div className="space-y-3 lg:col-span-3">
+            {booking.notes && (
+              <div className="p-3 bg-muted/30 rounded border border-border/50">
+                <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 mb-1.5">
+                  <FileText className="w-3.5 h-3.5" />
+                  Catatan Pengajuan
+                </p>
+                <p className="text-sm text-foreground">
+                  {booking.notes}
+                </p>
+              </div>
             )}
 
-            {booking.status === "approved" && (
+            {booking.reject_reason && (
+              <div className="p-3 bg-destructive/5 rounded border border-destructive/10">
+                <p className="text-xs font-medium text-destructive flex items-center gap-1.5 mb-1.5">
+                  <AlertOctagon className="w-3.5 h-3.5" />
+                  Alasan Penolakan Dosen
+                </p>
+                <p className="text-sm text-destructive/90">
+                  {booking.reject_reason}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Kartu - Aksi */}
+      {(showActions || booking.status === "approved") && (
+        <div className="bg-muted/10 border-t border-border/50 px-5 py-3.5 flex flex-col sm:flex-row justify-end gap-2">
+          {booking.status === "approved" && booking.mode === "online" && booking.location && (
+            <a
+              href={booking.location.startsWith("http") ? booking.location : `https://${booking.location}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center h-8 px-4 rounded text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors w-full sm:w-auto"
+            >
+              <Video className="w-3.5 h-3.5 mr-1.5" />
+              Gabung Rapat
+            </a>
+          )}
+          {showActions && (
+            <>
               <Button
                 size="sm"
-                className="h-10 px-6 rounded-sm font-black uppercase tracking-wider bg-primary hover:bg-primary/90 text-primary-foreground shadow-none w-full sm:w-auto"
-                onClick={() => updateStatus(booking.id, "completed")}
+                variant="outline"
+                className="h-8 px-4 rounded text-xs shadow-none border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                onClick={() => setRejectDialog(booking)}
+                disabled={loadingId === booking.id}
+              >
+                <XCircle className="w-3.5 h-3.5 mr-1.5" /> Tolak
+              </Button>
+              <Button
+                size="sm"
+                className="h-8 px-4 rounded text-xs shadow-none"
+                onClick={() => updateStatus(booking.id, "approved")}
                 disabled={loadingId === booking.id}
               >
                 {loadingId === booking.id ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                 ) : (
-                  <CheckCircle className="w-4 h-4 mr-2" />
+                  <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
                 )}
-                TANDAI SELESAI
+                Setujui Jadwal
               </Button>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+            </>
+          )}
+
+          {booking.status === "approved" && (
+            <Button
+              size="sm"
+              className="h-8 px-4 rounded text-xs shadow-none w-full sm:w-auto"
+              onClick={() => updateStatus(booking.id, "completed")}
+              disabled={loadingId === booking.id}
+            >
+              {loadingId === booking.id ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
+              )}
+              Tandai Selesai
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
   );
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-10">
-      {/* Header Halaman - Formal & Lega */}
-      <div className="bg-card border border-primary/15 p-6 sm:p-8 rounded-sm shadow-sm relative overflow-hidden">
-        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" />
-        <div className="pl-2">
-          <h1 className="text-2xl font-black text-primary uppercase tracking-tight">
-            Permintaan Bimbingan Masuk
-          </h1>
-          <p className="text-sm font-medium text-muted-foreground mt-2 border-l-2 border-primary/30 pl-3">
-            Tinjau dan kelola pengajuan jadwal bimbingan dari mahasiswa akademik
-            Anda.
-          </p>
-        </div>
+    <div className="space-y-5 max-w-7xl mx-auto pb-10">
+      {/* Header Halaman */}
+      <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5">
+        <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest mb-1">
+          Manajemen Jadwal
+        </p>
+        <h1 className="text-base font-semibold text-foreground">
+          Permintaan Bimbingan Masuk
+        </h1>
       </div>
 
       <Tabs
         value={activeTab}
         onValueChange={handleTabChange}
-        className="w-full mt-6"
+        className="w-full mt-4"
       >
-        {/* Style Tabs Enterprise - Kotak, Kapital, Solid */}
-        <TabsList className="w-full sm:w-auto flex flex-col sm:flex-row bg-muted/40 border-2 border-border rounded-sm p-1.5 h-auto gap-1">
+        <TabsList className="w-full sm:w-auto flex flex-col sm:flex-row bg-transparent border-b border-border rounded-none p-0 h-auto gap-4 mb-4">
           <TabsTrigger
             value="pending"
-            className="flex-1 justify-center gap-2.5 rounded-sm data-[state=active]:bg-card data-[state=active]:border-primary/20 data-[state=active]:shadow-sm border border-transparent py-2.5 px-6 transition-all"
+            className="flex-1 sm:flex-none justify-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 px-1 transition-all"
           >
-            <span className="font-black text-xs uppercase tracking-wider">
-              Menunggu
-            </span>
-            <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-sm text-[10px] font-black border border-amber-200">
+            <span className="text-sm font-medium">Menunggu</span>
+            <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-xs">
               {pending.length}
             </span>
           </TabsTrigger>
           <TabsTrigger
             value="approved"
-            className="flex-1 justify-center gap-2.5 rounded-sm data-[state=active]:bg-card data-[state=active]:border-primary/20 data-[state=active]:shadow-sm border border-transparent py-2.5 px-6 transition-all"
+            className="flex-1 sm:flex-none justify-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 px-1 transition-all"
           >
-            <span className="font-black text-xs uppercase tracking-wider">
-              Disetujui
-            </span>
-            <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-sm text-[10px] font-black border border-emerald-200">
+            <span className="text-sm font-medium">Disetujui</span>
+            <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-xs">
               {approved.length}
             </span>
           </TabsTrigger>
           <TabsTrigger
             value="others"
-            className="flex-1 justify-center rounded-sm font-black text-xs uppercase tracking-wider data-[state=active]:bg-card data-[state=active]:border-primary/20 data-[state=active]:shadow-sm border border-transparent py-2.5 px-6 transition-all"
+            className="flex-1 sm:flex-none justify-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 px-1 transition-all"
           >
-            Riwayat
+            <span className="text-sm font-medium">Riwayat</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pending" className="mt-6">
+        <TabsContent value="pending" className="mt-4">
           {pending.length === 0 ? (
-            <div className="border border-border rounded-sm bg-card">
-              <EmptyState
-                icon={CalendarDays}
-                title="TIDAK ADA PERMINTAAN BARU"
-                description="Belum ada pengajuan jadwal bimbingan masuk dari mahasiswa."
-              />
-            </div>
+            <EmptyState
+              icon={CalendarDays}
+              title="Tidak ada permintaan baru"
+              description="Belum ada pengajuan jadwal bimbingan masuk dari mahasiswa."
+            />
           ) : (
             <div>
               {getPaginatedData(pending).map((b) => (
@@ -353,15 +349,13 @@ export default function RequestsPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="approved" className="mt-6">
+        <TabsContent value="approved" className="mt-4">
           {approved.length === 0 ? (
-            <div className="border border-border rounded-sm bg-card">
-              <EmptyState
-                icon={CheckCircle}
-                title="TIDAK ADA JADWAL DISETUJUI"
-                description="Jadwal yang telah Anda setujui akan muncul di sini."
-              />
-            </div>
+            <EmptyState
+              icon={CheckCircle}
+              title="Tidak ada jadwal disetujui"
+              description="Jadwal yang telah Anda setujui akan muncul di sini."
+            />
           ) : (
             <div>
               {getPaginatedData(approved).map((b) => (
@@ -372,15 +366,13 @@ export default function RequestsPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="others" className="mt-6">
+        <TabsContent value="others" className="mt-4">
           {others.length === 0 ? (
-            <div className="border border-border rounded-sm bg-card">
-              <EmptyState
-                icon={FileText}
-                title="TIDAK ADA RIWAYAT"
-                description="Data bimbingan yang selesai, ditolak, atau dibatalkan akan tampil di sini."
-              />
-            </div>
+            <EmptyState
+              icon={FileText}
+              title="Tidak ada riwayat"
+              description="Data bimbingan yang selesai, ditolak, atau dibatalkan akan tampil di sini."
+            />
           ) : (
             <div>
               {getPaginatedData(others).map((b) => (
@@ -392,39 +384,38 @@ export default function RequestsPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Dialog Tolak Pengajuan Formal */}
+      {/* Dialog Tolak Pengajuan */}
       <Dialog open={!!rejectDialog} onOpenChange={() => setRejectDialog(null)}>
-        <DialogContent className="rounded-sm border-2 border-destructive/20 sm:max-w-md p-0 overflow-hidden bg-card">
-          <DialogHeader className="px-6 py-5 border-b border-destructive/10 bg-destructive/5">
-            <DialogTitle className="font-black text-base uppercase tracking-wide text-destructive flex items-center gap-2">
-              <AlertOctagon className="w-5 h-5" />
+        <DialogContent className="rounded-md border-0 shadow-[0_8px_30px_rgba(0,0,0,0.12)] sm:max-w-md p-0 overflow-hidden bg-card">
+          <DialogHeader className="px-5 py-4 border-b border-border/50">
+            <DialogTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <AlertOctagon className="w-4 h-4 text-destructive" />
               Tolak Pengajuan Bimbingan
             </DialogTitle>
           </DialogHeader>
-          <div className="px-6 py-5 space-y-3">
-            <Label className="font-black text-[10px] uppercase tracking-wider text-foreground">
+          <div className="px-5 py-4 space-y-3">
+            <Label className="text-xs font-medium text-foreground">
               Alasan Penolakan (Opsional)
             </Label>
             <Textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Berikan alasan logis agar mahasiswa dapat menyesuaikan jadwal pengajuan berikutnya..."
-              className="rounded-sm border-2 border-border focus-visible:ring-destructive shadow-none h-28 resize-none p-3 font-medium text-sm"
+              placeholder="Berikan alasan agar mahasiswa dapat menyesuaikan..."
+              className="rounded border-border/60 focus-visible:ring-destructive shadow-none h-24 resize-none p-3 text-sm"
             />
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
-              Catatan: Aksi ini tidak dapat dibatalkan.
-            </p>
           </div>
-          <DialogFooter className="px-6 py-4 border-t border-border bg-muted/20 flex flex-row justify-end gap-3">
+          <DialogFooter className="px-5 py-3.5 border-t border-border/50 bg-muted/20 flex flex-row justify-end gap-2">
             <Button
               variant="outline"
-              className="rounded-sm shadow-none font-black uppercase tracking-wider text-xs border-border px-5"
+              size="sm"
+              className="rounded text-xs"
               onClick={() => setRejectDialog(null)}
             >
-              BATALKAN
+              Batal
             </Button>
             <Button
-              className="rounded-sm shadow-none font-black uppercase tracking-wider text-xs bg-destructive hover:bg-destructive/90 text-destructive-foreground px-5"
+              size="sm"
+              className="rounded text-xs bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               onClick={() =>
                 updateStatus(rejectDialog.id, "rejected", rejectReason)
               }
@@ -432,11 +423,11 @@ export default function RequestsPage() {
             >
               {loadingId === rejectDialog?.id ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  MEMPROSES...
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  Memproses...
                 </>
               ) : (
-                "KONFIRMASI TOLAK"
+                "Konfirmasi Tolak"
               )}
             </Button>
           </DialogFooter>

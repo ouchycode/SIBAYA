@@ -57,148 +57,136 @@ export default function AuditPage() {
   // ==========================================
   // PERUBAHAN PADA UI/UX (FRONTEND KAKU & ARSIP)
   // ==========================================
+ 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-10">
-      {/* Header Halaman Formal & Lega */}
-      <div className="bg-card border border-primary/15 p-6 sm:p-8 rounded-sm shadow-sm relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" />
-        <div className="pl-2">
-          <h1 className="text-2xl font-black text-primary uppercase tracking-tight flex items-center gap-2.5">
-            <ShieldCheck className="w-7 h-7 shrink-0" />
+    <div className="space-y-5 max-w-7xl">
+      {/* Header Halaman */}
+      <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest mb-1">
+            Log Aktivitas
+          </p>
+          <h1 className="text-base font-semibold text-foreground">
             Audit Trail Sistem
           </h1>
-          <p className="text-sm font-medium text-muted-foreground mt-2 border-l-2 border-primary/30 pl-3">
-            Rekaman kronologis dan pemantauan seluruh aktivitas kritikal
-            pengguna di dalam infrastruktur SIBAYA.
-          </p>
         </div>
-        <div className="bg-muted/30 border-2 border-primary/10 p-3 rounded-sm shrink-0 flex items-center gap-3">
-          <Terminal className="w-5 h-5 text-primary" />
-          <div className="flex flex-col">
-            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none">
-              Status Log
-            </span>
-            <span className="text-xs font-black text-primary uppercase mt-1 leading-none">
-              Real-time Active
-            </span>
+        <div className="flex items-center gap-2.5 px-3 py-1.5 bg-primary/5 rounded-md border border-primary/10">
+          <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          <span className="text-xs font-medium text-primary">
+            Real-time Active
+          </span>
+        </div>
+      </div>
+
+      <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+        {/* Tabel Header Semu */}
+        <div className="hidden lg:grid grid-cols-12 gap-4 px-5 py-3 text-xs font-medium text-muted-foreground border-b border-border/50 bg-muted/20">
+          <div className="col-span-3 flex items-center gap-2">
+            <User className="w-3.5 h-3.5" /> Aktor
+          </div>
+          <div className="col-span-6 flex items-center gap-2">
+            <Activity className="w-3.5 h-3.5" /> Aktivitas
+          </div>
+          <div className="col-span-3 text-right flex items-center justify-end gap-2">
+            <Clock className="w-3.5 h-3.5" /> Waktu
           </div>
         </div>
-      </div>
 
-      {/* Tabel Header Semu */}
-      <div className="hidden lg:flex items-center px-6 py-3 text-[10px] font-black text-muted-foreground uppercase tracking-widest bg-muted/40 border-2 border-border rounded-t-sm border-b-0">
-        <div className="w-[240px] flex items-center gap-2">
-          <User className="w-3.5 h-3.5" /> AKTOR AKTIVITAS
-        </div>
-        <div className="flex-1 flex items-center gap-2">
-          <Activity className="w-3.5 h-3.5" /> DESKRIPSI KEGIATAN
-        </div>
-        <div className="w-[200px] text-right flex items-center justify-end gap-2">
-          <Clock className="w-3.5 h-3.5" /> WAKTU KEJADIAN
-        </div>
-      </div>
-
-      <div className="space-y-0 border-2 border-t-0 border-border rounded-b-sm bg-card overflow-hidden">
-        {currentLogs.map((log, index) => (
-          <div
-            key={log.id}
-            className={cn(
-              "flex flex-col lg:flex-row lg:items-center p-5 lg:px-6 gap-4 transition-all hover:bg-muted/30 relative",
-              index !== currentLogs.length - 1 && "border-b border-border/60",
-            )}
-          >
-            {/* Kolom Aktor */}
-            <div className="lg:w-[240px] flex items-center gap-3 shrink-0">
-              <div className="w-10 h-10 rounded-sm bg-muted border-2 border-border flex items-center justify-center shrink-0 shadow-inner">
-                <User className="w-5 h-5 text-muted-foreground" />
+        <div className="divide-y divide-border/40">
+          {currentLogs.map((log) => (
+            <div
+              key={log.id}
+              className="flex flex-col lg:grid lg:grid-cols-12 gap-4 px-5 py-4 hover:bg-muted/40 transition-colors"
+            >
+              {/* Kolom Aktor */}
+              <div className="lg:col-span-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                  <User className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {log.actor_name || log.actor_email.split("@")[0]}
+                  </p>
+                  <span
+                    className={cn(
+                      "text-[10px] px-1.5 py-0.5 rounded font-medium",
+                      roleColors[log.actor_role] ||
+                        "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {log.actor_role || "Unknown"}
+                  </span>
+                </div>
               </div>
-              <div className="min-w-0 flex-1 space-y-1">
-                <p className="text-sm font-black text-foreground uppercase tracking-wide truncate">
-                  {log.actor_name || log.actor_email.split("@")[0]}
+
+              {/* Kolom Deskripsi & Action */}
+              <div className="lg:col-span-6 flex flex-col justify-center min-w-0">
+                <div className="mb-1">
+                  <span
+                    className={cn(
+                      "text-[10px] px-2 py-0.5 rounded-sm font-medium border",
+                      actionColors[log.action] ||
+                        "bg-muted text-muted-foreground border-border"
+                    )}
+                  >
+                    {log.action?.replace(/_/g, " ").toUpperCase()}
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {log.description}
                 </p>
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "font-black uppercase tracking-widest text-[8px] px-1.5 py-0 rounded-none border shadow-none",
-                    roleColors[log.actor_role] ||
-                      "bg-muted text-muted-foreground border-border",
-                  )}
-                >
-                  {log.actor_role || "UNKNOWN"}
-                </Badge>
               </div>
-            </div>
 
-            {/* Kolom Deskripsi & Action */}
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "font-black uppercase tracking-widest text-[9px] px-2 py-0.5 rounded-sm border-2",
-                    actionColors[log.action] ||
-                      "bg-muted text-muted-foreground border-border",
-                  )}
-                >
-                  {log.action?.replace(/_/g, " ")}
-                </Badge>
-              </div>
-              <p className="text-sm font-semibold text-foreground/80 leading-relaxed border-l-2 border-primary/20 pl-3">
-                {log.description}
-              </p>
-            </div>
-
-            {/* Kolom Timestamp */}
-            <div className="lg:w-[200px] shrink-0 lg:text-right pt-3 lg:pt-0 border-t lg:border-0 border-dashed border-border">
-              <div className="inline-flex flex-col lg:items-end bg-muted/50 lg:bg-transparent p-2 lg:p-0 rounded-sm w-full lg:w-auto">
-                <span className="text-[10px] font-black text-foreground uppercase tracking-widest">
+              {/* Kolom Timestamp */}
+              <div className="lg:col-span-3 flex lg:flex-col items-center lg:items-end justify-between lg:justify-center text-xs">
+                <span className="text-muted-foreground">
                   {log.created_date &&
                     format(new Date(log.created_date), "dd MMM yyyy", {
                       locale: localeId,
                     })}
                 </span>
-                <span className="text-[11px] font-mono font-bold text-primary mt-0.5">
+                <span className="font-medium text-foreground">
                   {log.created_date &&
                     format(new Date(log.created_date), "HH:mm:ss 'WIB'")}
                 </span>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Kontrol Pagination Formal - Box Kaku */}
-      {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between bg-muted/20 border-2 border-primary/10 p-4 rounded-sm mt-6 gap-4">
-          <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">
-            HALAMAN {currentPage} DARI {totalPages}
-          </p>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-10 px-4 rounded-sm shadow-none font-black text-[10px] uppercase tracking-wider border-2 border-border hover:bg-background"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="w-4 h-4 mr-1.5" />
-              SEBELUMNYA
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-10 px-4 rounded-sm shadow-none font-black text-[10px] uppercase tracking-wider border-2 border-border hover:bg-background"
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
-              disabled={currentPage === totalPages}
-            >
-              SELANJUTNYA
-              <ChevronRight className="w-4 h-4 ml-1.5" />
-            </Button>
-          </div>
+          ))}
         </div>
-      )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-5 py-3.5 border-t border-border/50 flex items-center justify-between bg-muted/20">
+            <p className="text-xs text-muted-foreground">
+              Halaman {currentPage} dari {totalPages}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 rounded text-xs shadow-none border-border/60 hover:bg-background"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+                Sebelumnya
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 rounded text-xs shadow-none border-border/60 hover:bg-background"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+              >
+                Selanjutnya
+                <ChevronRight className="w-3.5 h-3.5 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

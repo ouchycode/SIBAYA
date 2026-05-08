@@ -28,8 +28,12 @@ export default function DosenDashboard() {
   const { data: mappingsAll = [] } = useEntityList("Mapping");
   const { data: bookingsAll = [] } = useEntityList("Booking");
 
-  const mappings = mappingsAll.filter((m) => m.status === "active");
-  const bookings = bookingsAll;
+  const mappings = mappingsAll.filter(
+    (m) => m.status === "active" && m.supervisor_email === user?.email,
+  );
+  const bookings = bookingsAll.filter(
+    (b) => b.supervisor_email === user?.email,
+  );
 
   const pendingRequests = bookings.filter((b) => b.status === "pending");
   const todayBookings = bookings.filter(
@@ -64,34 +68,31 @@ export default function DosenDashboard() {
   // ==========================================
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
-      {/* Banner Selamat Datang - Identitas Dosen Formal */}
-      <div className="bg-card border-2 border-primary/10 rounded-sm shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 relative overflow-hidden">
-        {/* Ornamen aksen kaku di kanan */}
-        <div className="absolute right-0 top-0 bottom-0 w-2 bg-primary/20" />
-
+      {/* Banner Selamat Datang */}
+      <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6">
         <div className="flex-1 space-y-1.5">
-          <p className="text-[10px] font-black uppercase tracking-widest text-primary/70">
+          <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
             Portal Dosen Pembimbing
           </p>
-          <h1 className="text-xl font-black text-foreground uppercase tracking-tight">
+          <h1 className="text-xl font-semibold text-foreground">
             {user?.full_name || "Dosen Terdaftar"}
           </h1>
-          <div className="flex flex-wrap items-center gap-3 mt-2 pt-2 border-t border-border">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase">
-              <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-sm border border-primary/20 font-mono font-bold tracking-widest">
-                {user?.nip || "NIP TIDAK TERSEDIA"}
+          <div className="flex flex-wrap items-center gap-3 mt-2 pt-2 border-t border-border/50">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="bg-primary/5 text-primary px-2.5 py-0.5 rounded font-medium border border-primary/10 tracking-wide">
+                {user?.nip || "NIP tidak tersedia"}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <Users className="w-3.5 h-3.5" />
-              <span>TOTAL {mappings.length} MAHASISWA BIMBINGAN AKTIF</span>
+              <span>{mappings.length} Mahasiswa Bimbingan Aktif</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Stats Grid - Komponen StatsCard dibungkus agar solid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatsCard
           title="Mahasiswa Bimbingan"
           value={mappings.length}
@@ -119,29 +120,24 @@ export default function DosenDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Panel Permintaan Masuk - Kaku & Administratif */}
-        <Card className="rounded-sm shadow-sm border-primary/20 bg-card">
-          <CardHeader className="pb-3 border-b border-primary/10 border-l-4 border-l-primary bg-muted/30 rounded-t-sm">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-black uppercase tracking-wide flex items-center gap-2 text-foreground">
-                <ClipboardList className="w-4 h-4 text-primary" />
-                Permintaan Masuk
-              </CardTitle>
-              <Link to="/requests">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-[10px] font-bold uppercase tracking-wider h-7 px-3 rounded-sm border-primary/20 hover:bg-primary/10 hover:text-primary shadow-none"
-                >
-                  Lihat Semua <ArrowRight className="w-3 h-3 ml-1" />
-                </Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="p-5">
+        {/* Panel Permintaan Masuk */}
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+          <div className="px-5 py-4 border-b border-border/50 flex items-center justify-between bg-muted/20">
+            <h3 className="text-sm font-semibold flex items-center gap-2 text-foreground">
+              <ClipboardList className="w-4 h-4 text-primary" />
+              Permintaan Masuk
+            </h3>
+            <Link
+              to="/requests"
+              className="flex items-center gap-1 text-xs text-primary font-medium hover:underline"
+            >
+              Lihat semua <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+          <div className="p-5">
             {pendingRequests.length === 0 ? (
               <EmptyState
-                title="TIDAK ADA PERMINTAAN"
+                title="Tidak ada permintaan"
                 description="Semua permintaan pengajuan jadwal bimbingan mahasiswa sudah diproses."
               />
             ) : (
@@ -149,51 +145,56 @@ export default function DosenDashboard() {
                 {pendingRequests.slice(0, 5).map((b) => (
                   <div
                     key={b.id}
-                    className="flex flex-col sm:flex-row sm:items-center gap-4 p-3.5 rounded-sm bg-background border border-border hover:border-primary/30 transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center gap-4 p-3.5 rounded border border-border/60 hover:bg-muted/40 transition-colors"
                   >
-                    {/* Kotak Ikon Formal */}
-                    <div className="w-10 h-10 rounded-sm bg-muted flex items-center justify-center shrink-0 border border-border">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
+                    <div className="w-10 h-10 rounded bg-muted flex items-center justify-center shrink-0">
+                      <Clock className="w-4 h-4 text-foreground" />
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-foreground uppercase tracking-wide truncate">
+                      <p className="text-sm font-medium text-foreground truncate">
                         {b.student_name}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] font-semibold text-muted-foreground uppercase bg-muted/50 px-1.5 py-0.5 rounded-sm border border-border">
+                        <span className="text-xs text-muted-foreground">
                           {format(new Date(b.date), "dd MMM yyyy", {
                             locale: localeId,
                           })}
                         </span>
-                        <span className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-sm border border-primary/20">
+                        <span className="text-xs font-medium text-primary">
                           {b.start_time} WIB
+                        </span>
+                        <span className="text-xs text-muted-foreground ml-1">
+                          • {b.mode === "online" ? "Daring" : "Luring"}
+                          {b.location && b.mode !== "online"
+                            ? ` • ${b.location}`
+                            : ""}
                         </span>
                       </div>
                     </div>
 
-                    <div className="pt-2 sm:pt-0 border-t border-border sm:border-t-0 flex shrink-0">
+                    <div className="pt-2 sm:pt-0 border-t border-border/50 sm:border-t-0 flex shrink-0">
                       <StatusBadge status="pending" />
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Panel Mahasiswa Pasif (Peringatan) - Kaku & Peringatan Merah */}
-        <Card className="rounded-sm shadow-sm border-destructive/20 bg-card">
-          <CardHeader className="pb-3 border-b border-destructive/10 border-l-4 border-l-destructive bg-destructive/5 rounded-t-sm">
-            <CardTitle className="text-sm font-black uppercase tracking-wide flex items-center gap-2 text-destructive">
+        {/* Panel Mahasiswa Pasif (Peringatan) */}
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+          <div className="px-5 py-4 border-b border-border/50 flex items-center justify-between bg-muted/20">
+            <h3 className="text-sm font-semibold flex items-center gap-2 text-destructive">
               <AlertTriangle className="w-4 h-4" />
               Peringatan Mahasiswa Pasif
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-5">
+            </h3>
+          </div>
+          <div className="p-5">
             {inactiveStudents.length === 0 ? (
               <EmptyState
-                title="STATUS TERKENDALI"
+                title="Status terkendali"
                 description="Tidak ada mahasiswa bimbingan yang tercatat pasif lebih dari 30 hari."
               />
             ) : (
@@ -201,24 +202,23 @@ export default function DosenDashboard() {
                 {inactiveStudents.slice(0, 5).map((m) => (
                   <div
                     key={m.id}
-                    className="flex flex-col sm:flex-row sm:items-center gap-4 p-3.5 rounded-sm bg-destructive/5 border border-destructive/10 hover:border-destructive/30 transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center gap-4 p-3.5 rounded bg-destructive/5 border border-destructive/10 hover:bg-destructive/10 transition-colors"
                   >
-                    {/* Kotak Inisial Merah */}
-                    <div className="w-10 h-10 rounded-sm bg-destructive/10 border border-destructive/20 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-black text-destructive uppercase">
+                    <div className="w-10 h-10 rounded bg-destructive flex items-center justify-center shrink-0">
+                      <span className="text-sm font-semibold text-destructive-foreground uppercase">
                         {(m.student_name || "?")[0]}
                       </span>
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-destructive/90 uppercase tracking-wide truncate">
+                      <p className="text-sm font-medium text-destructive/90 truncate">
                         {m.student_name}
                       </p>
-                      <p className="text-[10px] font-bold text-destructive/70 uppercase tracking-widest mt-1.5">
+                      <p className="text-xs text-destructive/70 mt-1">
                         {studentLastBooking[m.student_email] ? (
                           <>
-                            <span className="mr-1">Bimbingan Terakhir:</span>
-                            <span className="bg-destructive/10 px-1.5 py-0.5 rounded-sm border border-destructive/20">
+                            <span className="mr-1">Bimbingan terakhir:</span>
+                            <span className="font-medium">
                               {format(
                                 new Date(studentLastBooking[m.student_email]),
                                 "dd MMM yyyy",
@@ -227,8 +227,8 @@ export default function DosenDashboard() {
                             </span>
                           </>
                         ) : (
-                          <span className="bg-destructive/10 px-1.5 py-0.5 rounded-sm border border-destructive/20">
-                            BELUM PERNAH BIMBINGAN
+                          <span className="font-medium">
+                            Belum pernah bimbingan
                           </span>
                         )}
                       </p>
@@ -237,8 +237,8 @@ export default function DosenDashboard() {
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

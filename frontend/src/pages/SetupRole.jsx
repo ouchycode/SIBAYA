@@ -11,8 +11,8 @@ export default function SetupRole() {
 
       <Card className="max-w-md w-full p-8 text-center rounded-md border-border shadow-lg relative z-10 bg-card">
         {/* Ikon Peringatan/Info Formal */}
-        <div className="w-16 h-16 rounded bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-5 shadow-sm">
-          <ShieldAlert className="w-8 h-8 text-primary" />
+        <div className="w-16 h-16 rounded bg-primary border border-primary flex items-center justify-center mx-auto mb-5 shadow-sm">
+          <ShieldAlert className="w-8 h-8 text-primary-foreground" />
         </div>
 
         <h1 className="text-2xl font-black text-foreground tracking-wide">

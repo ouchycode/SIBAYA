@@ -63,7 +63,7 @@ export default function AppLayout({ user }) {
       <div
         className={cn(
           "transition-all duration-300 flex flex-col min-h-screen",
-          collapsed ? "lg:ml-[64px]" : "lg:ml-[240px]",
+          collapsed ? "lg:ml-[72px]" : "lg:ml-[260px]",
         )}
       >
         <TopBar
@@ -72,7 +72,7 @@ export default function AppLayout({ user }) {
           title={title}
         />
 
-        <main className="flex-1 p-4 sm:p-5 lg:p-6 w-full max-w-[1400px] mx-auto animate-in fade-in duration-200">
+        <main className="flex-1 p-4 sm:p-5 lg:p-6 w-full max-w-[1400px] mx-auto">
           <Outlet />
         </main>
 

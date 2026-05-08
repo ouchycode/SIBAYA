@@ -10,23 +10,23 @@ export default function RoleRouter() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex w-full animate-in fade-in duration-500 z-50 fixed inset-0">
+      <div className="min-h-screen bg-background flex w-full z-50 fixed inset-0">
         {/* Sidebar Skeleton (Hidden on Mobile) */}
-        <div className="hidden lg:flex flex-col w-[260px] border-r border-border bg-primary p-4 shrink-0">
+        <div className="hidden lg:flex flex-col w-[260px] border-r border-border bg-card p-4 shrink-0">
           <div className="flex items-center gap-4 mb-8 pt-4 px-1">
-            <Skeleton className="w-12 h-12 rounded-md bg-primary-foreground/20" />
+            <Skeleton className="w-10 h-10 rounded-md bg-muted" />
             <div className="space-y-2">
-              <Skeleton className="h-5 w-24 bg-primary-foreground/20" />
-              <Skeleton className="h-3 w-16 bg-primary-foreground/20" />
+              <Skeleton className="h-4 w-24 bg-muted" />
+              <Skeleton className="h-2 w-16 bg-muted" />
             </div>
           </div>
           <div className="space-y-3 px-1">
             {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="h-10 w-full rounded-md bg-primary-foreground/10" />
+              <Skeleton key={i} className="h-10 w-full rounded-md bg-muted/60" />
             ))}
           </div>
           <div className="mt-auto p-1">
-            <Skeleton className="h-16 w-full rounded-md bg-primary-foreground/10" />
+            <Skeleton className="h-16 w-full rounded-md bg-muted/60" />
           </div>
         </div>
 

@@ -7,6 +7,7 @@ async function request(path, options = {}) {
   const token = localStorage.getItem(TOKEN_KEY);
   const headers = {
     "Content-Type": "application/json",
+    "Accept": "application/json",
     ...(options.headers || {}),
   };
 

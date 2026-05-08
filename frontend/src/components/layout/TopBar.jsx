@@ -53,12 +53,21 @@ export default function TopBar({ user, onToggleSidebar, title }) {
   });
 
   const typeColors = {
-    booking_new: "bg-blue-50 text-blue-700 border-blue-200",
-    booking_approved: "bg-green-50 text-green-700 border-green-200",
-    booking_rejected: "bg-red-50 text-red-700 border-red-200",
-    booking_cancelled: "bg-amber-50 text-amber-700 border-amber-200",
-    reminder: "bg-purple-50 text-purple-700 border-purple-200",
-    system: "bg-muted text-muted-foreground border-border",
+    booking_new: "bg-blue-500 text-white border-blue-600",
+    booking_approved: "bg-green-500 text-white border-green-600",
+    booking_rejected: "bg-red-500 text-white border-red-600",
+    booking_cancelled: "bg-amber-500 text-white border-amber-600",
+    reminder: "bg-purple-500 text-white border-purple-600",
+    system: "bg-muted-foreground text-white border-muted",
+  };
+
+  const typeLabels = {
+    booking_new: "Pengajuan Baru",
+    booking_approved: "Disetujui",
+    booking_rejected: "Ditolak",
+    booking_cancelled: "Dibatalkan",
+    reminder: "Pengingat",
+    system: "Sistem",
   };
 
   const handleNotificationClick = (n) => {
@@ -114,7 +123,7 @@ export default function TopBar({ user, onToggleSidebar, title }) {
                   Notifikasi
                 </h3>
                 {unreadCount > 0 && (
-                  <span className="text-[10px] bg-primary/10 text-primary font-semibold px-1.5 py-0.5 rounded-full">
+                  <span className="text-[10px] bg-primary text-primary-foreground font-semibold px-1.5 py-0.5 rounded-full">
                     {unreadCount} baru
                   </span>
                 )}
@@ -166,7 +175,7 @@ export default function TopBar({ user, onToggleSidebar, title }) {
                             typeColors[n.type] || typeColors.system,
                           )}
                         >
-                          {n.type?.replace(/_/g, " ")}
+                          {typeLabels[n.type] || n.type?.replace(/_/g, " ")}
                         </span>
                         <span className="text-[10px] text-muted-foreground shrink-0">
                           {n.created_date &&

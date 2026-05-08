@@ -10,13 +10,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { sibaApi } from "@/api/apiClient";
 import { User, Mail, Hash, Camera, Loader2, Save } from "lucide-react";
 
 export default function SettingsPage() {
   const { user, setUser } = useAuth();
-  const { toast } = useToast();
 
   const [name, setName] = useState("");
   const [photo, setPhoto] = useState("");
@@ -33,11 +32,7 @@ export default function SettingsPage() {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        toast({
-          title: "Ukuran File Terlalu Besar",
-          description: "Maksimal ukuran foto adalah 2MB.",
-          variant: "destructive",
-        });
+        toast.error("Maksimal ukuran foto adalah 2MB.");
         return;
       }
 
@@ -60,16 +55,9 @@ export default function SettingsPage() {
 
       setUser({ ...user, photo: updatedUser.photo });
 
-      toast({
-        title: "Berhasil",
-        description: "Profil Anda berhasil diperbarui.",
-      });
+      toast.success("Profil Anda berhasil diperbarui.");
     } catch (error) {
-      toast({
-        title: "Gagal Memperbarui Profil",
-        description: error.message || "Terjadi kesalahan saat menyimpan data.",
-        variant: "destructive",
-      });
+      toast.error(error.data?.message || error.message || "Terjadi kesalahan saat menyimpan data.");
     } finally {
       setIsLoading(false);
     }
@@ -79,34 +67,34 @@ export default function SettingsPage() {
   // PERUBAHAN HANYA PADA UI/UX (FRONTEND KAKU)
   // ==========================================
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-5 max-w-4xl mx-auto pb-10">
       {/* Header Halaman */}
-      <div className="flex flex-col gap-1 border-b border-primary/10 pb-4">
-        <h1 className="text-2xl font-black tracking-tight uppercase">
+      <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5">
+        <h1 className="text-base font-semibold text-foreground">
           Pengaturan Profil
         </h1>
-        <p className="text-sm text-muted-foreground font-medium">
+        <p className="text-sm text-muted-foreground mt-1">
           Kelola informasi profil dan sesuaikan foto Anda.
         </p>
       </div>
 
-      <Card className="rounded-sm border border-primary/15 shadow-sm">
-        <CardHeader className="bg-muted/30 border-b border-primary/10 border-l-4 border-l-primary pb-4">
-          <CardTitle className="text-base font-bold uppercase tracking-wide">
+      <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden border border-border/50">
+        <div className="px-5 py-4 border-b border-border/50 bg-muted/10">
+          <h3 className="text-sm font-semibold text-foreground">
             Informasi Personal
-          </CardTitle>
-          <CardDescription className="text-xs font-medium">
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
             Perbarui foto profil Anda. Nama, NIM, dan Email tidak dapat diubah.
-          </CardDescription>
-        </CardHeader>
+          </p>
+        </div>
 
-        <CardContent className="pt-6">
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Area Upload Pas Foto (Rasio 3:4 Formal) */}
-            <div className="flex flex-col sm:flex-row gap-6 p-4 border border-primary/10 bg-primary/5 rounded-sm items-start">
+        <div className="p-5">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Area Upload Pas Foto */}
+            <div className="flex flex-col sm:flex-row gap-5 p-4 border border-border/50 bg-muted/20 rounded-md items-start">
               <div className="relative group cursor-pointer shrink-0">
-                {/* Frame Foto Paspor Kaku */}
-                <div className="w-[120px] h-[160px] rounded-sm overflow-hidden border-2 border-muted bg-background flex items-center justify-center shadow-inner">
+                {/* Frame Foto Paspor */}
+                <div className="w-28 h-36 rounded-md overflow-hidden border border-border bg-background flex items-center justify-center">
                   {photo ? (
                     <img
                       src={photo}
@@ -114,19 +102,17 @@ export default function SettingsPage() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <User className="w-12 h-12 text-muted-foreground/50" />
+                    <User className="w-10 h-10 text-muted-foreground/50" />
                   )}
                 </div>
 
                 {/* Hover Overlay */}
                 <label
                   htmlFor="photo-upload"
-                  className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white"
+                  className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white rounded-md"
                 >
-                  <Camera className="w-6 h-6 mb-1" />
-                  <span className="text-[10px] font-bold uppercase">
-                    Ubah Foto
-                  </span>
+                  <Camera className="w-5 h-5 mb-1" />
+                  <span className="text-xs font-medium">Ubah Foto</span>
                 </label>
 
                 <input
@@ -139,33 +125,35 @@ export default function SettingsPage() {
               </div>
 
               <div className="flex-1 space-y-2">
-                <h4 className="text-sm font-bold uppercase tracking-wide">
+                <h4 className="text-sm font-semibold text-foreground">
                   Foto Profil
                 </h4>
-                <div className="text-xs text-muted-foreground space-y-1 pb-2">
+                <div className="text-xs text-muted-foreground space-y-1">
                   <p>• Format wajib: JPG, PNG atau GIF.</p>
                   <p>• Maksimal ukuran file: 2MB.</p>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="rounded-sm text-xs font-bold"
-                  onClick={() =>
-                    document.getElementById("photo-upload").click()
-                  }
-                >
-                  Pilih Foto Baru
-                </Button>
+                <div className="pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-4 rounded text-xs shadow-none border-border/60 hover:bg-muted/40"
+                    onClick={() =>
+                      document.getElementById("photo-upload").click()
+                    }
+                  >
+                    Pilih Foto Baru
+                  </Button>
+                </div>
               </div>
             </div>
 
-            {/* Input Form Kaku & Administratif */}
-            <div className="grid gap-5">
+            {/* Input Form */}
+            <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label
                   htmlFor="name"
-                  className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground"
+                  className="text-xs font-medium text-foreground"
                 >
                   Nama Lengkap
                 </Label>
@@ -173,15 +161,15 @@ export default function SettingsPage() {
                   id="name"
                   value={name}
                   disabled
-                  className="rounded-sm h-10 border-primary/10 bg-muted/50 text-muted-foreground font-medium"
+                  className="rounded h-9 border-border/60 bg-muted/30 text-muted-foreground text-sm shadow-none"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label
                     htmlFor="email"
-                    className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground"
+                    className="text-xs font-medium text-foreground"
                   >
                     Email
                   </Label>
@@ -193,7 +181,7 @@ export default function SettingsPage() {
                       id="email"
                       value={user?.email || ""}
                       disabled
-                      className="pl-9 bg-muted/50 border-primary/10 text-muted-foreground rounded-sm h-10 font-medium"
+                      className="pl-9 h-9 rounded border-border/60 bg-muted/30 text-muted-foreground text-sm shadow-none"
                     />
                   </div>
                 </div>
@@ -201,7 +189,7 @@ export default function SettingsPage() {
                 <div className="space-y-1.5">
                   <Label
                     htmlFor="nim"
-                    className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground"
+                    className="text-xs font-medium text-foreground"
                   >
                     {user?.role === "dosen" ? "NIP / NIDN" : "NIM"}
                   </Label>
@@ -217,7 +205,7 @@ export default function SettingsPage() {
                           : user?.nim || "-"
                       }
                       disabled
-                      className="pl-9 bg-muted/50 border-primary/10 text-muted-foreground rounded-sm h-10 font-mono font-semibold tracking-widest"
+                      className="pl-9 h-9 rounded border-border/60 bg-muted/30 text-muted-foreground font-mono text-sm shadow-none"
                     />
                   </div>
                 </div>
@@ -225,28 +213,29 @@ export default function SettingsPage() {
             </div>
 
             {/* Tombol Aksi */}
-            <div className="pt-2 border-t border-primary/10">
+            <div className="pt-4 border-t border-border/50 flex justify-end">
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full sm:w-auto rounded-sm font-bold uppercase tracking-wide mt-4"
+                size="sm"
+                className="h-8 px-5 rounded text-xs shadow-none w-full sm:w-auto"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                     Menyimpan...
                   </>
                 ) : (
                   <>
-                    <Save className="w-4 h-4 mr-2" />
+                    <Save className="w-3.5 h-3.5 mr-1.5" />
                     Simpan Perubahan
                   </>
                 )}
               </Button>
             </div>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

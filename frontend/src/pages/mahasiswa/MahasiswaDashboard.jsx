@@ -23,9 +23,9 @@ export default function MahasiswaDashboard() {
   const { data: mappings = [] } = useEntityList("Mapping");
   const { data: logsAll = [] } = useEntityList("Logbook");
 
-  const supervisor = mappings.find((m) => m.status === "active");
-  const bookings = bookingsAll;
-  const logs = logsAll;
+  const supervisor = mappings.find((m) => m.status === "active" && m.student_email === user?.email);
+  const bookings = bookingsAll.filter((b) => b.student_email === user?.email);
+  const logs = logsAll.filter((l) => l.student_email === user?.email);
 
   const pendingCount = bookings.filter((b) => b.status === "pending").length;
   const approvedCount = bookings.filter((b) => b.status === "approved").length;
@@ -168,8 +168,8 @@ export default function MahasiswaDashboard() {
           <div className="p-4 space-y-1.5">
             <Link to="/booking" className="block">
               <div className="flex items-center gap-3 p-4 rounded hover:bg-muted/60 transition-colors group">
-                <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <CalendarDays className="w-4 h-4 text-primary" />
+                <div className="w-8 h-8 rounded bg-primary flex items-center justify-center flex-shrink-0">
+                  <CalendarDays className="w-4 h-4 text-primary-foreground" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">
@@ -184,7 +184,7 @@ export default function MahasiswaDashboard() {
 
             <Link to="/logbook" className="block">
               <div className="flex items-center gap-3 p-4 rounded hover:bg-muted/60 transition-colors group">
-                <div className="w-8 h-8 rounded bg-accent/20 flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 rounded bg-accent flex items-center justify-center flex-shrink-0">
                   <BookOpen className="w-4 h-4 text-accent-foreground" />
                 </div>
                 <div>

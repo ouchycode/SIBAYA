@@ -1,9 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { sibaApi } from "@/api/apiClient";
 import {
   BookOpen,
@@ -17,9 +13,11 @@ import {
   Clock,
   ShieldCheck,
 } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { setAuthError } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -35,219 +33,219 @@ export default function LoginPage() {
       navigate("/", { replace: true });
       window.location.reload();
     } catch (err) {
-      setError(
-        err.message ||
-          "Kredensial tidak valid. Silakan periksa kembali NIM/NIDN dan Kata Sandi Anda.",
-      );
+      if (err.data?.error_type === "user_not_registered") {
+        setAuthError({
+          type: "user_not_registered",
+          message: "User not registered in database",
+        });
+      } else {
+        setError(
+          err.message ||
+            "Kredensial tidak valid. Silakan periksa kembali NIM/NIDN dan kata sandi Anda.",
+        );
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
+  const features = [
+    {
+      icon: CheckCircle2,
+      title: "Logbook Digital",
+      desc: "Catat histori dan progres bimbingan secara terstruktur tanpa kertas.",
+    },
+    {
+      icon: Clock,
+      title: "Monitoring Real-time",
+      desc: "Pantau status persetujuan dan ketersediaan waktu dosen pembimbing.",
+    },
+    {
+      icon: ShieldCheck,
+      title: "Aman & Terpusat",
+      desc: "Terintegrasi langsung dengan database akademik universitas.",
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-muted/30 flex flex-col items-center justify-center p-4 sm:p-8">
-      {/* Container Split-Screen menggunakan Card bawaan */}
-      <Card className="w-full max-w-4xl rounded-md shadow-xl border-border overflow-hidden bg-card flex flex-col md:flex-row">
-        {/* ==========================================
-            SISI KIRI: BRANDING & FITUR STATIS
-            ========================================== */}
-        <div className="w-full md:w-5/12 bg-muted/40 p-8 border-b md:border-b-0 md:border-r border-border flex flex-col justify-between">
+    <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4 sm:p-8">
+      <div className="w-full max-w-4xl bg-card rounded-md shadow-[0_4px_24px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col md:flex-row">
+        {/* Kiri — Branding */}
+        <div className="w-full md:w-5/12 bg-muted/40 border-b md:border-b-0 md:border-r border-border/50 p-8 flex flex-col justify-between">
           <div>
-            {/* Header Branding dengan Logo */}
+            {/* Logo */}
             <div className="flex items-center gap-3 mb-8">
-              <div className="w-12 h-12 bg-background flex items-center justify-center rounded-sm p-1.5 shadow-sm border border-border shrink-0">
+              <div className="w-10 h-10 rounded-full bg-background flex items-center justify-center overflow-hidden border border-border shrink-0">
                 <img
                   src="/logo-uym.png"
                   alt="Logo UYM"
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain p-1"
                   onError={(e) => {
                     e.target.style.display = "none";
-                    e.target.nextSibling.style.display = "flex";
+                    e.target.nextSibling.style.display = "block";
                   }}
                 />
-                <div className="hidden bg-primary/10 rounded items-center justify-center w-full h-full">
-                  <BookOpen className="w-6 h-6 text-primary" />
-                </div>
+                <BookOpen className="w-4 h-4 text-primary hidden" />
               </div>
               <div>
-                <h1 className="text-xl font-black text-foreground tracking-tight leading-none">
+                <p className="text-sm font-semibold text-foreground leading-none">
                   SIBAYA
-                </h1>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5 tracking-wide">
                   Universitas Yatsi Madani
                 </p>
               </div>
             </div>
 
+            {/* Tagline */}
             <div className="mb-8">
-              <h2 className="text-lg font-bold text-foreground leading-snug">
+              <h2 className="text-base font-semibold text-foreground leading-snug">
                 Sistem Informasi Bimbingan Akademik
               </h2>
-              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+              <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
                 Platform resmi untuk memfasilitasi pencatatan dan monitoring
                 kegiatan bimbingan antara mahasiswa dan dosen pembimbing.
               </p>
             </div>
 
-            {/* List Fitur Statis */}
-            <div className="space-y-5">
-              <div className="flex gap-3">
-                <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="text-sm font-bold text-foreground">
-                    Logbook Digital
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                    Catat histori dan progres bimbingan secara terstruktur tanpa
-                    kertas.
-                  </p>
+            {/* Fitur */}
+            <div className="space-y-4">
+              {features.map(({ icon: Icon, title, desc }) => (
+                <div key={title} className="flex gap-3">
+                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <Icon className="w-3.5 h-3.5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-foreground">
+                      {title}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                      {desc}
+                    </p>
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex gap-3">
-                <Clock className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="text-sm font-bold text-foreground">
-                    Monitoring Real-time
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                    Pantau status persetujuan dan ketersediaan waktu dosen
-                    pembimbing.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <ShieldCheck className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="text-sm font-bold text-foreground">
-                    Aman & Terpusat
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                    Terintegrasi langsung dengan database akademik universitas.
-                  </p>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* Footer Kiri */}
-          <div className="mt-8 pt-5 border-t border-border">
-            <p className="text-[10px] font-medium text-muted-foreground leading-relaxed">
-              &copy; {new Date().getFullYear()} Kevin Ardiansyah
-              <br />
-              Universitas Yatsi Madani
+          {/* Footer kiri */}
+          <div className="mt-8 pt-4 border-t border-border/50">
+            <p className="text-[10px] text-muted-foreground">
+              &copy; {new Date().getFullYear()} Universitas Yatsi Madani
             </p>
           </div>
         </div>
 
-        {/* ==========================================
-            SISI KANAN: FORM LOGIN
-            ========================================== */}
-        <div className="w-full md:w-7/12 p-8 lg:p-12 flex flex-col justify-center bg-card">
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-foreground">
+        {/* Kanan — Form */}
+        <div className="w-full md:w-7/12 p-8 lg:p-10 flex flex-col justify-center">
+          <div className="mb-6">
+            <h1 className="text-base font-semibold text-foreground">
               Masuk ke Sistem
-            </h2>
-            <p className="text-sm font-medium text-muted-foreground mt-1">
-              Gunakan kredensial SIYAMA Anda.
+            </h1>
+            <p className="text-xs text-muted-foreground mt-1">
+              Gunakan kredensial SIYAMA Anda untuk mengakses portal.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="flex items-start gap-2.5 p-3 bg-destructive/10 border border-destructive/20 rounded-sm mb-2">
-                <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
-                <p className="text-xs font-bold text-destructive leading-relaxed">
+              <div className="flex items-start gap-2.5 p-3 bg-destructive/5 border border-destructive/20 rounded">
+                <AlertCircle className="w-3.5 h-3.5 text-destructive mt-0.5 shrink-0" />
+                <p className="text-xs text-destructive leading-relaxed">
                   {error}
                 </p>
               </div>
             )}
 
+            {/* Email */}
             <div className="space-y-1.5">
-              <Label
+              <label
                 htmlFor="email"
-                className="font-bold text-foreground text-xs uppercase tracking-wider"
+                className="text-xs font-medium text-foreground"
               >
-                NIM / NIDN / Email
-              </Label>
+                Username
+              </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <Input
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <input
                   id="email"
                   type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Masukkan identitas..."
-                  className="pl-9 h-11 bg-background border-border shadow-none rounded-sm text-sm font-medium focus-visible:ring-primary"
+                  className="w-full h-9 pl-9 pr-3 rounded text-sm bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors placeholder:text-muted-foreground/50"
                   required
                   autoFocus
+                  disabled={isLoading}
                 />
               </div>
             </div>
 
+            {/* Password */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label
+                <label
                   htmlFor="password"
-                  className="font-bold text-foreground text-xs uppercase tracking-wider"
+                  className="text-xs font-medium text-foreground"
                 >
-                  Kata Sandi
-                </Label>
-                <a
-                  href="#"
-                  className="text-[10px] font-bold text-primary hover:underline"
-                >
-                  Lupa Sandi?
-                </a>
+                  Password
+                </label>
               </div>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <Input
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="pl-9 pr-10 h-11 bg-background border-border shadow-none rounded-sm text-sm font-medium focus-visible:ring-primary tracking-widest placeholder:tracking-normal"
+                  className="w-full h-9 pl-9 pr-9 rounded text-sm bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors placeholder:text-muted-foreground/50"
                   required
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
-                  tabIndex="-1"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
                 >
                   {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
+                    <EyeOff className="w-3.5 h-3.5" />
                   ) : (
-                    <Eye className="w-4 h-4" />
+                    <Eye className="w-3.5 h-3.5" />
                   )}
                 </button>
               </div>
             </div>
 
-            <Button
-              className="w-full h-11 rounded-sm font-bold shadow-none text-sm mt-6"
+            <button
               type="submit"
               disabled={isLoading}
+              className="w-full h-9 rounded bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   Memverifikasi...
                 </>
               ) : (
-                "Masuk ke Dashboard"
+                "Login Sibaya"
               )}
-            </Button>
+            </button>
           </form>
+
+          <p className="text-[11px] text-muted-foreground text-center mt-6">
+            Kesulitan masuk? Hubungi{" "}
+            <a
+              href="mailto:baa@uym.ac.id"
+              className="text-primary hover:underline"
+            >
+              BAA
+            </a>{" "}
+            untuk bantuan akses.
+          </p>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
