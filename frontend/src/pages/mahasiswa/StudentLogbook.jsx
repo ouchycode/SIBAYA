@@ -27,12 +27,13 @@ import { format, parseISO } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useEntityList } from "@/lib/hooks/useEntityList";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ITEMS_PER_PAGE = 5;
 
 export default function StudentLogbook() {
   const { data: user } = useCurrentUser();
-  const { data: allLogs = [] } = useEntityList("Logbook");
+  const { data: allLogs = [], isLoading: isLoadingLogs } = useEntityList("Logbook");
 
   const baseStudentLogs = allLogs
     .filter((log) => log.student_email === user?.email)
@@ -77,6 +78,46 @@ export default function StudentLogbook() {
   const handleNextPage = () => {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   };
+
+  if (isLoadingLogs) {
+    return (
+      <div className="space-y-5 max-w-7xl">
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-5 w-40" />
+          </div>
+          <div className="flex items-center gap-3">
+             <Skeleton className="h-4 w-12" />
+             <Skeleton className="h-9 w-[180px] rounded" />
+          </div>
+        </div>
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+             <div key={i} className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+               <div className="px-5 py-3.5 border-b border-border/50 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                     <Skeleton className="h-8 w-8 rounded" />
+                     <div className="space-y-2">
+                       <Skeleton className="h-4 w-40" />
+                       <Skeleton className="h-3 w-24" />
+                     </div>
+                  </div>
+                  <Skeleton className="h-5 w-24 rounded" />
+               </div>
+               <div className="p-5 space-y-5">
+                  <Skeleton className="h-4 w-full" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <Skeleton className="h-24 w-full" />
+                     <Skeleton className="h-24 w-full" />
+                  </div>
+               </div>
+             </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5 max-w-7xl">

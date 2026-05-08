@@ -53,16 +53,18 @@ import { toast } from "sonner";
 import { useEntityList } from "@/lib/hooks/useEntityList";
 import { sibaApi } from "@/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MappingPage() {
-  // ==========================================
-  // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
-  // ==========================================
   const queryClient = useQueryClient();
-  const { data: mappings = [] } = useEntityList("Mapping");
-  const { data: users = [] } = useEntityList("User");
+  const { data: mappings = [], isLoading: isMappingsLoading } =
+    useEntityList("Mapping");
+  const { data: users = [], isLoading: isUsersLoading } = useEntityList("User");
+
+  const isDataLoading = isMappingsLoading || isUsersLoading;
 
   const ITEMS_PER_PAGE = 5;
+
   const [currentPage, setCurrentPage] = useState(1);
 
   const [showDialog, setShowDialog] = useState(false);
@@ -82,11 +84,6 @@ export default function MappingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const students = users.filter(
-    (u) => u.role === "mahasiswa" && (u.status === "active" || !u.status),
-  );
-  const dosens = users.filter((u) => u.role === "dosen");
-
   const filteredMappings = useMemo(() => {
     return mappings
       .filter((m) => m.status === "active")
@@ -103,6 +100,59 @@ export default function MappingPage() {
   React.useEffect(() => {
     setCurrentPage(1);
   }, [searchMapping]);
+
+  if (isDataLoading) {
+    return (
+      <div className="space-y-5 max-w-7xl">
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-5 w-40" />
+          </div>
+          <Skeleton className="h-8 w-32 rounded shrink-0" />
+        </div>
+        <Skeleton className="h-10 w-full rounded" />
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] h-[140px] flex border border-border/50"
+            >
+              <div className="flex-1 p-5 border-r border-border/50 space-y-4">
+                <div className="flex items-center gap-12">
+                  <div className="flex gap-3 flex-1">
+                    <Skeleton className="h-10 w-10 rounded shrink-0" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-4 w-4" />
+                  <div className="flex gap-3 flex-1">
+                    <Skeleton className="h-10 w-10 rounded shrink-0" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  </div>
+                </div>
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+              <div className="w-32 p-5 bg-muted/10 space-y-2">
+                <Skeleton className="h-8 w-full rounded" />
+                <Skeleton className="h-8 w-full rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const students = users.filter(
+    (u) => u.role === "mahasiswa" && (u.status === "active" || !u.status),
+  );
+  const dosens = users.filter((u) => u.role === "dosen");
 
   const totalPages = Math.ceil(filteredMappings.length / ITEMS_PER_PAGE) || 1;
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -165,9 +215,6 @@ export default function MappingPage() {
     }
   };
 
-  // ==========================================
-  // PERUBAHAN PADA UI/UX (FRONTEND KAKU & LEGA)
-  // ==========================================
   return (
     <div className="space-y-5 max-w-7xl">
       {/* Header Halaman */}
@@ -272,7 +319,13 @@ export default function MappingPage() {
                           Topik / Judul Tugas Akhir
                         </p>
                         <p className="text-sm font-medium text-foreground">
-                          {m.thesis_title ? m.thesis_title : <span className="text-muted-foreground italic">Belum ada judul</span>}
+                          {m.thesis_title ? (
+                            m.thesis_title
+                          ) : (
+                            <span className="text-muted-foreground italic">
+                              Belum ada judul
+                            </span>
+                          )}
                         </p>
                       </div>
                     </div>

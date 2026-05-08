@@ -25,24 +25,27 @@ import {
   UserCheck,
 } from "lucide-react";
 import { format } from "date-fns";
-import { id as localeId } from "date-fns/locale"; // Import untuk format tanggal Indonesia
+import { id as localeId } from "date-fns/locale";
 import { toast } from "sonner";
 import { useEntityList } from "@/lib/hooks/useEntityList";
 import { sibaApi } from "@/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MyBookings() {
-  // ==========================================
-  // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
-  // ==========================================
   const queryClient = useQueryClient();
   const { data: user } = useCurrentUser();
-  const { data: allBookings = [] } = useEntityList("Booking");
+  const { data: allBookings = [], isLoading: isLoadingBookings } =
+    useEntityList("Booking");
   const [cancellingId, setCancellingId] = useState(null);
 
   const activeBookings = allBookings
-    .filter((b) => ["pending", "approved"].includes(b.status) && b.student_email === user?.email)
+    .filter(
+      (b) =>
+        ["pending", "approved"].includes(b.status) &&
+        b.student_email === user?.email,
+    )
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   const handleCancel = async (id) => {
@@ -61,9 +64,6 @@ export default function MyBookings() {
     }
   };
 
-  // ==========================================
-  // PERUBAHAN PADA UI/UX (FRONTEND KAKU & RAPI)
-  // ==========================================
   const BookingCard = ({ b }) => (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 border-b border-border/40 hover:bg-muted/40 transition-colors last:border-0">
       <div className="flex items-start sm:items-center gap-4">
@@ -112,7 +112,11 @@ export default function MyBookings() {
         <StatusBadge status={b.status} />
         {b.status === "approved" && b.mode === "online" && b.location && (
           <a
-            href={b.location.startsWith("http") ? b.location : `https://${b.location}`}
+            href={
+              b.location.startsWith("http")
+                ? b.location
+                : `https://${b.location}`
+            }
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center h-8 px-3 rounded text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors shadow-none"
@@ -167,6 +171,40 @@ export default function MyBookings() {
       </div>
     </div>
   );
+
+  if (isLoadingBookings) {
+    return (
+      <div className="space-y-5 max-w-7xl">
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5">
+          <Skeleton className="h-3 w-24 mb-2" />
+          <Skeleton className="h-5 w-40" />
+        </div>
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden mt-6">
+          <div className="flex items-center gap-2.5 px-5 py-4 border-b border-border/50">
+            <Skeleton className="h-5 w-32" />
+          </div>
+          <div className="flex flex-col">
+            {[1, 2].map((i) => (
+              <div
+                key={i}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5 border-b border-border/40"
+              >
+                <div className="flex items-start sm:items-center gap-4">
+                  <Skeleton className="h-10 w-10 shrink-0 rounded" />
+                  <div className="hidden sm:block w-px h-10 bg-border/50 flex-shrink-0" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-3 w-64" />
+                  </div>
+                </div>
+                <Skeleton className="h-6 w-24 rounded-full shrink-0" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5 max-w-7xl">

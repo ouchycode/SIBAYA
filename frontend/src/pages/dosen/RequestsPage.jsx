@@ -35,16 +35,17 @@ import { useEntityList } from "@/lib/hooks/useEntityList";
 import { sibaApi } from "@/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ITEMS_PER_PAGE = 5;
 
 export default function RequestsPage() {
-  // ==========================================
-  // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
-  // ==========================================
   const queryClient = useQueryClient();
-  const { data: user } = useCurrentUser();
-  const { data: allBookings = [] } = useEntityList("Booking");
+  const { data: user, isLoading: isUserLoading } = useCurrentUser();
+  const { data: allBookings = [], isLoading: isBookingsLoading } =
+    useEntityList("Booking");
+
+  const isDataLoading = isUserLoading || isBookingsLoading;
 
   const [activeTab, setActiveTab] = useState("pending");
   const [currentPage, setCurrentPage] = useState(1);
@@ -192,8 +193,12 @@ export default function RequestsPage() {
                 <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
               )}
               <span className="text-sm text-foreground">
-                {booking.mode === "online" ? "Daring (Online)" : "Luring (Tatap Muka)"}
-                {booking.location && booking.mode !== "online" ? ` • ${booking.location}` : ""}
+                {booking.mode === "online"
+                  ? "Daring (Online)"
+                  : "Luring (Tatap Muka)"}
+                {booking.location && booking.mode !== "online"
+                  ? ` • ${booking.location}`
+                  : ""}
               </span>
             </div>
           </div>
@@ -206,9 +211,7 @@ export default function RequestsPage() {
                   <FileText className="w-3.5 h-3.5" />
                   Catatan Pengajuan
                 </p>
-                <p className="text-sm text-foreground">
-                  {booking.notes}
-                </p>
+                <p className="text-sm text-foreground">{booking.notes}</p>
               </div>
             )}
 
@@ -230,17 +233,23 @@ export default function RequestsPage() {
       {/* Footer Kartu - Aksi */}
       {(showActions || booking.status === "approved") && (
         <div className="bg-muted/10 border-t border-border/50 px-5 py-3.5 flex flex-col sm:flex-row justify-end gap-2">
-          {booking.status === "approved" && booking.mode === "online" && booking.location && (
-            <a
-              href={booking.location.startsWith("http") ? booking.location : `https://${booking.location}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center h-8 px-4 rounded text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors w-full sm:w-auto"
-            >
-              <Video className="w-3.5 h-3.5 mr-1.5" />
-              Gabung Rapat
-            </a>
-          )}
+          {booking.status === "approved" &&
+            booking.mode === "online" &&
+            booking.location && (
+              <a
+                href={
+                  booking.location.startsWith("http")
+                    ? booking.location
+                    : `https://${booking.location}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center h-8 px-4 rounded text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors w-full sm:w-auto"
+              >
+                <Video className="w-3.5 h-3.5 mr-1.5" />
+                Gabung Rapat
+              </a>
+            )}
           {showActions && (
             <>
               <Button
@@ -287,6 +296,54 @@ export default function RequestsPage() {
       )}
     </div>
   );
+
+  if (isDataLoading) {
+    return (
+      <div className="space-y-5 max-w-7xl mx-auto pb-10">
+        {/* Header Skeleton */}
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5">
+          <Skeleton className="h-3 w-32 mb-1.5" />
+          <Skeleton className="h-5 w-56" />
+        </div>
+
+        {/* Tabs Skeleton */}
+        <div className="flex gap-4 border-b border-border mb-4">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-10 w-24" />
+          ))}
+        </div>
+
+        {/* List Skeleton */}
+        <div className="space-y-4">
+          {[1, 2].map((i) => (
+            <div
+              key={i}
+              className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden border border-border/50"
+            >
+              <div className="bg-muted/20 border-b border-border/50 px-5 py-3.5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="w-10 h-10 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </div>
+                <Skeleton className="h-6 w-20 rounded-full" />
+              </div>
+              <div className="p-5 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                </div>
+                <Skeleton className="h-20 w-full rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto pb-10">

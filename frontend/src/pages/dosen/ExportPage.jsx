@@ -14,18 +14,48 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useEntityList } from "@/lib/hooks/useEntityList";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ExportPage() {
-  // ==========================================
-  // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
-  // ==========================================
   const [selectedStudent, setSelectedStudent] = useState("all");
   const [exporting, setExporting] = useState(false);
-  const { data: user } = useCurrentUser();
-  const { data: mappingsAll = [] } = useEntityList("Mapping");
-  const { data: logsAll = [] } = useEntityList("Logbook");
+  const { data: user, isLoading: isUserLoading } = useCurrentUser();
+  const { data: mappingsAll = [], isLoading: isMappingsLoading } =
+    useEntityList("Mapping");
+  const { data: logsAll = [], isLoading: isLogsLoading } =
+    useEntityList("Logbook");
 
-  const mappings = mappingsAll.filter((m) => m.status === "active" && m.supervisor_email === user?.email);
+  const isDataLoading = isUserLoading || isMappingsLoading || isLogsLoading;
+
+  if (isDataLoading) {
+    return (
+      <div className="space-y-5 max-w-5xl mx-auto pb-10">
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5">
+          <Skeleton className="h-3 w-32 mb-1.5" />
+          <Skeleton className="h-5 w-56" />
+        </div>
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] mt-4 overflow-hidden border border-border/50">
+          <div className="px-5 py-4 border-b border-border/50">
+            <Skeleton className="h-5 w-48" />
+          </div>
+          <div className="p-5 space-y-6">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-9 w-full" />
+            </div>
+            <Skeleton className="h-28 w-full rounded" />
+            <div className="flex justify-end">
+              <Skeleton className="h-8 w-44" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const mappings = mappingsAll.filter(
+    (m) => m.status === "active" && m.supervisor_email === user?.email,
+  );
   const logs = logsAll.filter((l) => l.supervisor_email === user?.email);
   const filteredLogs =
     selectedStudent === "all"
@@ -66,9 +96,6 @@ export default function ExportPage() {
     toast.success("File berhasil di-unduh");
   };
 
-  // ==========================================
-  // PERUBAHAN PADA UI/UX (FRONTEND KAKU & LEGA)
-  // ==========================================
   return (
     <div className="space-y-5 max-w-5xl mx-auto pb-10">
       {/* Header Halaman */}
@@ -79,7 +106,6 @@ export default function ExportPage() {
         <h1 className="text-base font-semibold text-foreground">
           Rekap & Export Data
         </h1>
-      
       </div>
 
       {/* Kotak Formulir Export */}

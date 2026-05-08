@@ -45,17 +45,19 @@ import { useEntityList } from "@/lib/hooks/useEntityList";
 import { sibaApi } from "@/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ITEMS_PER_PAGE = 5;
 
 export default function DosenLogbook() {
-  // ==========================================
-  // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
-  // ==========================================
   const queryClient = useQueryClient();
   const { data: user } = useCurrentUser();
-  const { data: bookingsAll = [] } = useEntityList("Booking");
-  const { data: logsAll = [] } = useEntityList("Logbook");
+  const { data: bookingsAll = [], isLoading: isLoadingBookings } =
+    useEntityList("Booking");
+  const { data: logsAll = [], isLoading: isLoadingLogs } =
+    useEntityList("Logbook");
+
+  const isDataLoading = isLoadingBookings || isLoadingLogs;
 
   const [showDialog, setShowDialog] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -74,7 +76,7 @@ export default function DosenLogbook() {
 
   const logs = logsAll.filter((l) => l.supervisor_email === user?.email);
   const completedBookings = bookingsAll.filter(
-    (b) => b.status === "completed" && b.supervisor_email === user?.email
+    (b) => b.status === "completed" && b.supervisor_email === user?.email,
   );
 
   const loggedBookingIds = new Set(logs.map((l) => String(l.booking_id)));
@@ -183,9 +185,46 @@ export default function DosenLogbook() {
     }
   };
 
-  // ==========================================
-  // PERUBAHAN PADA UI/UX (FRONTEND KAKU & LEGA)
-  // ==========================================
+  if (isDataLoading) {
+    return (
+      <div className="space-y-5 max-w-7xl mx-auto pb-10">
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-5 w-48" />
+          </div>
+          <Skeleton className="h-9 w-full sm:w-[220px]" />
+        </div>
+        <div className="space-y-4 mt-4">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden border border-border/50"
+            >
+              <div className="bg-muted/10 border-b border-border/50 px-5 py-3.5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </div>
+                <Skeleton className="h-8 w-20" />
+              </div>
+              <div className="p-5 space-y-5">
+                <Skeleton className="h-10 w-full" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-24 w-full" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 max-w-7xl mx-auto pb-10">
       {/* Header Halaman & Filter Bar */}
@@ -197,7 +236,6 @@ export default function DosenLogbook() {
           <h1 className="text-base font-semibold text-foreground">
             Logbook Bimbingan
           </h1>
-       
         </div>
 
         {/* Dropdown Filter Mahasiswa */}
@@ -252,7 +290,10 @@ export default function DosenLogbook() {
                       {b.student_name}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Sesi: {format(new Date(b.date), "dd MMMM yyyy", { locale: localeId })}
+                      Sesi:{" "}
+                      {format(new Date(b.date), "dd MMMM yyyy", {
+                        locale: localeId,
+                      })}
                     </p>
                   </div>
                 </div>
@@ -419,7 +460,9 @@ export default function DosenLogbook() {
                   variant="outline"
                   size="sm"
                   className="h-8 px-3 rounded text-xs shadow-none border-border/60 hover:bg-muted/40"
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
                   disabled={currentPage === 1}
                 >
                   <ChevronLeft className="w-3.5 h-3.5 mr-1" />
@@ -459,13 +502,21 @@ export default function DosenLogbook() {
               {/* Info Mahasiswa */}
               <div className="bg-muted/30 rounded-md p-4 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Mahasiswa</span>
-                  <span className="text-sm font-semibold text-foreground">{selectedBooking.student_name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    Mahasiswa
+                  </span>
+                  <span className="text-sm font-semibold text-foreground">
+                    {selectedBooking.student_name}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Tanggal Sesi</span>
+                  <span className="text-xs text-muted-foreground">
+                    Tanggal Sesi
+                  </span>
                   <span className="text-sm font-medium text-foreground">
-                    {format(new Date(selectedBooking.date), "dd MMMM yyyy", { locale: localeId })}
+                    {format(new Date(selectedBooking.date), "dd MMMM yyyy", {
+                      locale: localeId,
+                    })}
                   </span>
                 </div>
               </div>

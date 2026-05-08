@@ -37,12 +37,15 @@ import { useEntityList } from "@/lib/hooks/useEntityList";
 import { sibaApi } from "@/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AvailabilityPage() {
-
   const queryClient = useQueryClient();
-  const { data: user } = useCurrentUser();
-  const { data: allSlots = [] } = useEntityList("Slot");
+  const { data: user, isLoading: isUserLoading } = useCurrentUser();
+  const { data: allSlots = [], isLoading: isSlotsLoading } =
+    useEntityList("Slot");
+
+  const isDataLoading = isUserLoading || isSlotsLoading;
 
   const slots = allSlots.filter((s) => s.supervisor_email === user?.email);
   const [showDialog, setShowDialog] = useState(false);
@@ -63,6 +66,44 @@ export default function AvailabilityPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeletingId, setIsDeletingId] = useState(null);
+
+  if (isDataLoading) {
+    return (
+      <div className="space-y-5 max-w-7xl mx-auto pb-10">
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-5 w-40" />
+          </div>
+          <Skeleton className="h-8 w-24 rounded shrink-0" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-border/50 h-[200px] p-4 space-y-4"
+            >
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded shrink-0" />
+                <div className="space-y-2 flex-1">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+              </div>
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+              </div>
+              <div className="pt-2 border-t border-border/50 flex justify-between items-center">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-5 w-16 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const handleCreate = async () => {
     setIsSubmitting(true);
@@ -106,9 +147,6 @@ export default function AvailabilityPage() {
     }
   };
 
-  // ==========================================
-  // PERUBAHAN PADA UI/UX (FRONTEND KAKU & LEGA)
-  // ==========================================
   return (
     <div className="space-y-5 max-w-7xl mx-auto pb-10">
       {/* Header Halaman */}
@@ -120,7 +158,6 @@ export default function AvailabilityPage() {
           <h1 className="text-base font-semibold text-foreground">
             Ketersediaan Dosen
           </h1>
-         
         </div>
         <Button
           onClick={() => setShowDialog(true)}

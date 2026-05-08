@@ -43,13 +43,12 @@ import { useEntityList } from "@/lib/hooks/useEntityList";
 import { sibaApi } from "@/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function PeriodsPage() {
-  // ==========================================
-  // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
-  // ==========================================
   const queryClient = useQueryClient();
-  const { data: periods = [] } = useEntityList("Period");
+  const { data: periods = [], isLoading: isLoadingPeriods } =
+    useEntityList("Period");
 
   const ITEMS_PER_PAGE = 5;
   const [currentPage, setCurrentPage] = useState(1);
@@ -66,6 +65,45 @@ export default function PeriodsPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  if (isLoadingPeriods) {
+    return (
+      <div className="space-y-5 max-w-7xl">
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-5 w-40" />
+          </div>
+          <Skeleton className="h-8 w-32 rounded shrink-0" />
+        </div>
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+          <div className="px-5 py-4 border-b border-border/50">
+            <Skeleton className="h-5 w-32" />
+          </div>
+          <div className="divide-y divide-border/40">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="flex justify-between items-center p-5 gap-4"
+              >
+                <div className="flex gap-4">
+                  <Skeleton className="h-10 w-10 rounded shrink-0" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-44" />
+                  </div>
+                </div>
+                <div className="flex gap-4 items-center">
+                  <Skeleton className="h-8 w-20" />
+                  <Skeleton className="h-6 w-12 rounded-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const openCreate = () => {
     setEditId(null);
@@ -152,13 +190,24 @@ export default function PeriodsPage() {
     }
   };
 
-  const totalPages = Math.ceil(periods.length / ITEMS_PER_PAGE) || 1;
+  const totalPages = Math.ceil((periods?.length || 0) / ITEMS_PER_PAGE) || 1;
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const currentPeriods = periods.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const currentPeriods = (periods || []).slice(
+    startIndex,
+    startIndex + ITEMS_PER_PAGE,
+  );
 
-  // ==========================================
-  // PERUBAHAN PADA UI/UX (FRONTEND KAKU & LEGA)
-  // ==========================================
+  const safeFormatDate = (dateStr) => {
+    try {
+      if (!dateStr) return "-";
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "-";
+      return format(d, "dd MMM yyyy", { locale: localeId });
+    } catch (e) {
+      return "-";
+    }
+  };
+
   return (
     <div className="space-y-5 max-w-7xl">
       {/* Header Halaman */}
@@ -201,7 +250,7 @@ export default function PeriodsPage() {
                 key={p.id}
                 className={cn(
                   "flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-4 hover:bg-muted/40 transition-colors",
-                  p.is_active && "bg-primary/[0.02]"
+                  p.is_active && "bg-primary/[0.02]",
                 )}
               >
                 {/* Detail Informasi */}
@@ -211,7 +260,7 @@ export default function PeriodsPage() {
                       "w-10 h-10 rounded flex items-center justify-center shrink-0",
                       p.is_active
                         ? "bg-primary/10 text-primary"
-                        : "bg-muted text-muted-foreground"
+                        : "bg-muted text-muted-foreground",
                     )}
                   >
                     <CalendarDays className="w-5 h-5" />
@@ -229,13 +278,9 @@ export default function PeriodsPage() {
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      {format(new Date(p.start_date), "dd MMM yyyy", {
-                        locale: localeId,
-                      })}
+                      {safeFormatDate(p.start_date)}
                       <span>—</span>
-                      {format(new Date(p.end_date), "dd MMM yyyy", {
-                        locale: localeId,
-                      })}
+                      {safeFormatDate(p.end_date)}
                     </p>
                     {p.description && (
                       <p className="text-[11px] text-muted-foreground mt-1 line-clamp-1">
@@ -293,7 +338,9 @@ export default function PeriodsPage() {
                   variant="outline"
                   size="sm"
                   className="h-8 px-3 rounded text-xs shadow-none border-border/60 hover:bg-background"
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
                   disabled={currentPage === 1}
                 >
                   <ChevronLeft className="w-3.5 h-3.5 mr-1" />

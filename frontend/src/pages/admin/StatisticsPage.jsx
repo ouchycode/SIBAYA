@@ -28,6 +28,7 @@ import { subDays, format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useEntityList } from "@/lib/hooks/useEntityList";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const COLORS = [
   "hsl(var(--primary))",
@@ -38,13 +39,53 @@ const COLORS = [
 ];
 
 export default function StatisticsPage() {
-  // ==========================================
-  // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
-  // ==========================================
-  const { data: users = [] } = useEntityList("User");
-  const { data: bookings = [] } = useEntityList("Booking");
-  const { data: mappings = [] } = useEntityList("Mapping");
+  const { data: users = [], isLoading: isUsersLoading } = useEntityList("User");
+  const { data: bookings = [], isLoading: isBookingsLoading } =
+    useEntityList("Booking");
+  const { data: mappings = [], isLoading: isMappingsLoading } =
+    useEntityList("Mapping");
   const thirtyDaysAgo = subDays(new Date(), 30);
+
+  const isDataLoading =
+    isUsersLoading || isBookingsLoading || isMappingsLoading;
+
+  if (isDataLoading) {
+    return (
+      <div className="space-y-5 max-w-7xl">
+        <div className="bg-card rounded-md p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+          <Skeleton className="h-3 w-24 mb-1.5" />
+          <Skeleton className="h-5 w-40" />
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="bg-card rounded-md p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-border/50"
+            >
+              <Skeleton className="h-8 w-8 rounded-full mb-3" />
+              <Skeleton className="h-6 w-16 mb-1" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {[1, 2].map((i) => (
+            <div
+              key={i}
+              className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden"
+            >
+              <div className="px-5 py-4 border-b border-border/50">
+                <Skeleton className="h-5 w-48" />
+              </div>
+              <div className="p-10 flex flex-col items-center">
+                <Skeleton className="h-[250px] w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const statusDist = [
     "pending",
@@ -55,12 +96,12 @@ export default function StatisticsPage() {
   ]
     .map((status) => ({
       name: status.charAt(0).toUpperCase() + status.slice(1),
-      value: bookings.filter((b) => b.status === status).length,
+      value: (bookings || []).filter((b) => b.status === status).length,
     }))
     .filter((d) => d.value > 0);
 
   const studentLastBooking = {};
-  bookings
+  (bookings || [])
     .filter((b) => b.status === "completed")
     .forEach((b) => {
       if (
@@ -71,14 +112,14 @@ export default function StatisticsPage() {
       }
     });
 
-  const inactiveStudents = mappings.filter(
+  const inactiveStudents = (mappings || []).filter(
     (m) =>
       !studentLastBooking[m.student_email] ||
       new Date(studentLastBooking[m.student_email]) < thirtyDaysAgo,
   );
 
   const dosenLoad = {};
-  mappings.forEach((m) => {
+  (mappings || []).forEach((m) => {
     dosenLoad[m.supervisor_name] = (dosenLoad[m.supervisor_name] || 0) + 1;
   });
   const dosenChartData = Object.entries(dosenLoad)
@@ -88,9 +129,6 @@ export default function StatisticsPage() {
     }))
     .sort((a, b) => b.count - a.count);
 
-  // ==========================================
-  // PERUBAHAN PADA UI/UX (FRONTEND KAKU & LEGA)
-  // ==========================================
   return (
     <div className="space-y-5 max-w-7xl">
       {/* Header Halaman */}

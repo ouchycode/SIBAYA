@@ -25,15 +25,14 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useEntityList } from "@/lib/hooks/useEntityList";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ITEMS_PER_PAGE = 5;
 
 export default function HistoryPage() {
-  // ==========================================
-  // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
-  // ==========================================
   const { data: user } = useCurrentUser();
-  const { data: allBookings = [] } = useEntityList("Booking");
+  const { data: allBookings = [], isLoading: isLoadingBookings } =
+    useEntityList("Booking");
 
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -70,9 +69,48 @@ export default function HistoryPage() {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   };
 
-  // ==========================================
-  // PERUBAHAN PADA UI/UX (FRONTEND KAKU, FORMAL, & LEGA)
-  // ==========================================
+  if (isLoadingBookings) {
+    return (
+      <div className="space-y-5 max-w-7xl">
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-5 w-40" />
+          </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 w-12" />
+            </div>
+            <Skeleton className="h-9 w-full sm:w-[180px] rounded" />
+          </div>
+        </div>
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-4 border-b border-border/50">
+            <Skeleton className="h-5 w-48" />
+          </div>
+          <div className="divide-y divide-border/40">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-5"
+              >
+                <div className="flex items-start sm:items-center gap-4">
+                  <Skeleton className="h-10 w-10 shrink-0 rounded" />
+                  <div className="hidden sm:block w-px h-10 bg-border/50 flex-shrink-0" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-3 w-64" />
+                  </div>
+                </div>
+                <Skeleton className="h-6 w-24 rounded-full shrink-0" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 max-w-7xl">
       {/* Header Halaman */}
@@ -166,7 +204,9 @@ export default function HistoryPage() {
                         <Clock className="w-3 h-3" />
                         {b.start_time} – {b.end_time}
                       </p>
-                      <span className="text-[10px] text-muted-foreground">•</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        •
+                      </span>
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         {b.mode === "online" ? (
                           <Video className="w-3 h-3" />
@@ -176,7 +216,9 @@ export default function HistoryPage() {
                         {b.mode === "online" ? "Daring" : "Luring"}
                         {b.location ? ` • ${b.location}` : ""}
                       </p>
-                      <span className="text-[10px] text-muted-foreground">•</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        •
+                      </span>
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <UserCheck className="w-3 h-3" />
                         {b.supervisor_name}

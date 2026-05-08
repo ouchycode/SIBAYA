@@ -21,16 +21,59 @@ import {
 } from "recharts";
 import { useEntityList } from "@/lib/hooks/useEntityList";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminDashboard() {
-  // ==========================================
-  // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
-  // ==========================================
-  const { data: user } = useCurrentUser();
-  const { data: users = [] } = useEntityList("User");
-  const { data: mappings = [] } = useEntityList("Mapping");
-  const { data: periods = [] } = useEntityList("Period");
-  const { data: bookings = [] } = useEntityList("Booking");
+  const { data: user, isLoading: isUserLoading } = useCurrentUser();
+  const { data: users = [], isLoading: isUsersLoading } = useEntityList("User");
+  const { data: mappings = [], isLoading: isMappingsLoading } =
+    useEntityList("Mapping");
+  const { data: periods = [], isLoading: isPeriodsLoading } =
+    useEntityList("Period");
+  const { data: bookings = [], isLoading: isBookingsLoading } =
+    useEntityList("Booking");
+
+  const isDataLoading =
+    isUserLoading ||
+    isUsersLoading ||
+    isMappingsLoading ||
+    isPeriodsLoading ||
+    isBookingsLoading;
+
+  if (isDataLoading) {
+    return (
+      <div className="space-y-4 max-w-7xl">
+        <div className="bg-card rounded-md p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <Skeleton className="h-10 w-44 rounded shrink-0" />
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="bg-card rounded-md p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-border/50"
+            >
+              <Skeleton className="h-8 w-8 rounded-full mb-3" />
+              <Skeleton className="h-6 w-16 mb-1" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          ))}
+        </div>
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+          <div className="px-5 py-4 border-b border-border/50">
+            <Skeleton className="h-5 w-48" />
+          </div>
+          <div className="p-10 flex flex-col items-center">
+            <Skeleton className="h-[300px] w-full max-w-3xl" />
+          </div>
+        </div>
+      </div>
+    );
+  }
   const activePeriod = periods.find((p) => p.is_active);
   const activeMappings = mappings.filter((m) => m.status === "active");
 
@@ -43,9 +86,6 @@ export default function AdminDashboard() {
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count);
 
-  // ==========================================
-  // PERUBAHAN PADA UI/UX (FRONTEND KAKU & LEGA)
-  // ==========================================
   return (
     <div className="space-y-4 max-w-7xl">
       {/* Header Halaman */}

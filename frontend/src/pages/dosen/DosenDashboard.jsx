@@ -19,15 +19,23 @@ import { format, subDays } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useEntityList } from "@/lib/hooks/useEntityList";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 
 export default function DosenDashboard() {
-  // ==========================================
-  // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
-  // ==========================================
-  const { data: user } = useCurrentUser();
-  const { data: mappingsAll = [] } = useEntityList("Mapping");
-  const { data: bookingsAll = [] } = useEntityList("Booking");
-
+  const { data: user, isLoading: isUserLoading } = useCurrentUser();
+  const { data: mappingsAll = [], isLoading: isMappingsLoading } = useEntityList("Mapping");
+  const { data: bookingsAll = [], isLoading: isBookingsLoading } = useEntityList("Booking");
+  const isDataLoading = isUserLoading || isMappingsLoading || isBookingsLoading;
   const mappings = mappingsAll.filter(
     (m) => m.status === "active" && m.supervisor_email === user?.email,
   );
@@ -63,9 +71,77 @@ export default function DosenDashboard() {
       new Date(studentLastBooking[m.student_email]) < thirtyDaysAgo,
   );
 
-  // ==========================================
-  // PERUBAHAN PADA UI/UX (FRONTEND KAKU & LEGA)
-  // ==========================================
+  const chartData = [
+    { name: "Menunggu", total: pendingRequests.length, color: "#f59e0b" },
+    {
+      name: "Disetujui",
+      total: bookings.filter((b) => b.status === "approved").length,
+      color: "#3b82f6",
+    },
+    { name: "Selesai", total: totalCompleted, color: "#8b5cf6" },
+    {
+      name: "Ditolak",
+      total: bookings.filter((b) => b.status === "rejected").length,
+      color: "#ef4444",
+    },
+  ];
+
+  if (isDataLoading) {
+    return (
+      <div className="space-y-4">
+        {/* Header Skeleton */}
+        <div className="bg-card rounded-md p-6 shadow-[0_1px_4px_rgba(0,0,0,0.06)] space-y-3">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-6 w-48" />
+          <div className="flex gap-4">
+            <Skeleton className="h-5 w-20" />
+            <Skeleton className="h-5 w-32" />
+          </div>
+        </div>
+
+        {/* Stats Grid Skeleton */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="bg-card rounded-md p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-border/50"
+            >
+              <Skeleton className="h-8 w-8 rounded-full mb-3" />
+              <Skeleton className="h-6 w-16 mb-1" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          ))}
+        </div>
+
+        {/* Main Content Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+            <div className="px-5 py-4 border-b border-border/50">
+              <Skeleton className="h-5 w-32" />
+            </div>
+            <div className="divide-y divide-border/40">
+              {[1, 2].map((i) => (
+                <div key={i} className="flex items-center gap-4 px-5 py-5">
+                  <Skeleton className="h-10 w-10 rounded-md shrink-0" />
+                  <div className="w-px h-8 bg-border/50 shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] h-[250px] p-5 space-y-4">
+            <Skeleton className="h-5 w-32 mb-4" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
       {/* Banner Selamat Datang */}
@@ -117,6 +193,55 @@ export default function DosenDashboard() {
           icon={CheckCircle}
           color="purple"
         />
+      </div>
+
+      {/* Analytics Chart */}
+      <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden p-6 mb-6">
+        <h3 className="text-sm font-semibold text-foreground mb-6 flex items-center gap-2">
+          <ClipboardList className="w-4 h-4 text-primary" />
+          Statistik Status Bimbingan
+        </h3>
+        <div className="h-64 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              margin={{ top: 5, right: 20, bottom: 5, left: 0 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="#e5e7eb"
+              />
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 12, fill: "#6b7280" }}
+                dy={10}
+              />
+              <YAxis
+                allowDecimals={false}
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 12, fill: "#6b7280" }}
+                dx={-10}
+              />
+              <Tooltip
+                cursor={{ fill: "#f3f4f6" }}
+                contentStyle={{
+                  borderRadius: "8px",
+                  border: "none",
+                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                }}
+              />
+              <Bar dataKey="total" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

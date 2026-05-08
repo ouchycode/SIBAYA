@@ -16,14 +16,22 @@ import { format, startOfDay, parseISO } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useEntityList } from "@/lib/hooks/useEntityList";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MahasiswaDashboard() {
   const { data: user } = useCurrentUser();
-  const { data: bookingsAll = [] } = useEntityList("Booking");
-  const { data: mappings = [] } = useEntityList("Mapping");
-  const { data: logsAll = [] } = useEntityList("Logbook");
+  const { data: bookingsAll = [], isLoading: isLoadingBookings } =
+    useEntityList("Booking");
+  const { data: mappings = [], isLoading: isLoadingMappings } =
+    useEntityList("Mapping");
+  const { data: logsAll = [], isLoading: isLoadingLogs } =
+    useEntityList("Logbook");
 
-  const supervisor = mappings.find((m) => m.status === "active" && m.student_email === user?.email);
+  const isDataLoading = isLoadingBookings || isLoadingMappings || isLoadingLogs;
+
+  const supervisor = mappings.find(
+    (m) => m.status === "active" && m.student_email === user?.email,
+  );
   const bookings = bookingsAll.filter((b) => b.student_email === user?.email);
   const logs = logsAll.filter((l) => l.student_email === user?.email);
 
@@ -41,6 +49,62 @@ export default function MahasiswaDashboard() {
     )
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .slice(0, 3);
+
+  if (isDataLoading) {
+    return (
+      <div className="space-y-4">
+        {/* Header Skeleton */}
+        <div className="bg-card rounded-md p-6 shadow-[0_1px_4px_rgba(0,0,0,0.06)] space-y-3">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-6 w-48" />
+          <div className="flex gap-4">
+            <Skeleton className="h-5 w-20" />
+            <Skeleton className="h-5 w-32" />
+          </div>
+        </div>
+
+        {/* Stats Grid Skeleton */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="bg-card rounded-md p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-border/50"
+            >
+              <Skeleton className="h-8 w-8 rounded-full mb-3" />
+              <Skeleton className="h-6 w-16 mb-1" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          ))}
+        </div>
+
+        {/* Main Content Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+            <div className="px-5 py-4 border-b border-border/50">
+              <Skeleton className="h-5 w-32" />
+            </div>
+            <div className="divide-y divide-border/40">
+              {[1, 2].map((i) => (
+                <div key={i} className="flex items-center gap-4 px-5 py-5">
+                  <Skeleton className="h-10 w-10 rounded-md shrink-0" />
+                  <div className="w-px h-8 bg-border/50 shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] h-[250px] p-5 space-y-4">
+            <Skeleton className="h-5 w-32 mb-4" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { useEntityList } from "@/lib/hooks/useEntityList";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -41,23 +42,66 @@ const roleColors = {
 };
 
 export default function AuditPage() {
-  // ==========================================
-  // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
-  // ==========================================
-  const { data: activityLogs = [] } = useEntityList("ActivityLog");
-  const logs = [...activityLogs].sort(
-    (a, b) => new Date(b.created_date) - new Date(a.created_date),
-  );
+  const { data: activityLogs = [], isLoading: isLoadingLogs } =
+    useEntityList("ActivityLog");
 
   const [currentPage, setCurrentPage] = useState(1);
+
+  if (isLoadingLogs) {
+    return (
+      <div className="space-y-5 max-w-7xl">
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-5 w-40" />
+          </div>
+          <Skeleton className="h-8 w-32 rounded shrink-0" />
+        </div>
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+          <div className="hidden lg:grid grid-cols-12 gap-4 px-5 py-3 border-b border-border/50 bg-muted/20">
+            <Skeleton className="col-span-3 h-4 w-20" />
+            <Skeleton className="col-span-6 h-4 w-32" />
+            <Skeleton className="col-span-3 h-4 w-20 ml-auto" />
+          </div>
+          <div className="divide-y divide-border/40">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div
+                key={i}
+                className="flex flex-col lg:grid lg:grid-cols-12 gap-4 px-5 py-4"
+              >
+                <div className="lg:col-span-3 flex items-center gap-3">
+                  <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+                  <div className="space-y-1.5 flex-1">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+                <div className="lg:col-span-6 space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-full" />
+                </div>
+                <div className="lg:col-span-3 flex lg:flex-col lg:items-end justify-between lg:justify-center space-y-1.5">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const logs = [...activityLogs].sort(
+    (a, b) =>
+      new Date(b.created_date || 0).getTime() -
+      new Date(a.created_date || 0).getTime(),
+  );
+
   const totalPages = Math.ceil(logs.length / ITEMS_PER_PAGE) || 1;
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const currentLogs = logs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  // ==========================================
-  // PERUBAHAN PADA UI/UX (FRONTEND KAKU & ARSIP)
-  // ==========================================
- 
   return (
     <div className="space-y-5 max-w-7xl">
       {/* Header Halaman */}
@@ -111,7 +155,7 @@ export default function AuditPage() {
                     className={cn(
                       "text-[10px] px-1.5 py-0.5 rounded font-medium",
                       roleColors[log.actor_role] ||
-                        "bg-muted text-muted-foreground"
+                        "bg-muted text-muted-foreground",
                     )}
                   >
                     {log.actor_role || "Unknown"}
@@ -126,7 +170,7 @@ export default function AuditPage() {
                     className={cn(
                       "text-[10px] px-2 py-0.5 rounded-sm font-medium border",
                       actionColors[log.action] ||
-                        "bg-muted text-muted-foreground border-border"
+                        "bg-muted text-muted-foreground border-border",
                     )}
                   >
                     {log.action?.replace(/_/g, " ").toUpperCase()}

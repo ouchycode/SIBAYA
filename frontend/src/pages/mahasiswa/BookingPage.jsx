@@ -28,13 +28,19 @@ import { useEntityList } from "@/lib/hooks/useEntityList";
 import { sibaApi } from "@/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function BookingPage() {
   const queryClient = useQueryClient();
   const { data: user } = useCurrentUser();
-  const { data: slots = [] } = useEntityList("Slot");
-  const { data: mappings = [] } = useEntityList("Mapping");
-  const { data: allBookings = [] } = useEntityList("Booking");
+  const { data: slots = [], isLoading: isSlotsLoading } = useEntityList("Slot");
+  const { data: mappings = [], isLoading: isMappingsLoading } =
+    useEntityList("Mapping");
+  const { data: allBookings = [], isLoading: isBookingsLoading } =
+    useEntityList("Booking");
+
+  const isDataLoading =
+    isSlotsLoading || isMappingsLoading || isBookingsLoading;
 
   const [selected, setSelected] = useState(null);
   const [notes, setNotes] = useState("");
@@ -54,7 +60,8 @@ export default function BookingPage() {
 
   const availableSlots = slots.filter((s) => {
     if (!supervisor || !s.date || !s.start_time) return false;
-    const isCorrectSupervisor = s.supervisor_email === supervisor.supervisor_email;
+    const isCorrectSupervisor =
+      s.supervisor_email === supervisor.supervisor_email;
     const slotDateTime = new Date(`${s.date}T${s.start_time}`);
     const isFuture = slotDateTime > new Date();
     const isStillAvailable = s.is_available === true;
@@ -99,6 +106,37 @@ export default function BookingPage() {
       setIsBooking(false);
     }
   };
+
+  if (isDataLoading) {
+    return (
+      <div className="space-y-5 max-w-7xl">
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-5 w-48" />
+          </div>
+          <Skeleton className="h-12 w-48" />
+        </div>
+        <div className="space-y-4">
+          {[1, 2].map((i) => (
+            <div
+              key={i}
+              className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden"
+            >
+              <div className="px-5 py-3.5 border-b border-border/50">
+                <Skeleton className="h-5 w-48" />
+              </div>
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                {[1, 2, 3].map((j) => (
+                  <Skeleton key={j} className="h-32 w-full rounded-md" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (!supervisor) {
     return (

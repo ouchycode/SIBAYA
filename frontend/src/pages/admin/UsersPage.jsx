@@ -49,6 +49,7 @@ import { useEntityList } from "@/lib/hooks/useEntityList";
 import { sibaApi } from "@/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -73,7 +74,7 @@ export default function UsersPage() {
   // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
   // ==========================================
   const queryClient = useQueryClient();
-  const { data: users = [] } = useEntityList("User");
+  const { data: users = [], isLoading: isLoadingUsers } = useEntityList("User");
 
   const [activeTab, setActiveTab] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -95,9 +96,49 @@ export default function UsersPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const dosens = users.filter((u) => u.role === "dosen");
-  const mahasiswas = users.filter((u) => u.role === "mahasiswa");
-  const unconfigured = users.filter((u) => !u.role);
+  if (isLoadingUsers) {
+    return (
+      <div className="space-y-5 max-w-7xl">
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-5 w-40" />
+          </div>
+          <Skeleton className="h-8 w-32 rounded shrink-0" />
+        </div>
+        <div className="flex gap-4 border-b border-border mb-4">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-10 w-24" />
+          ))}
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] h-[100px] flex p-5 gap-6 border border-border/50"
+            >
+              <Skeleton className="h-12 w-12 rounded-full shrink-0" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+              <div className="w-[150px] space-y-2">
+                <Skeleton className="h-5 w-full rounded" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-8 flex-1" />
+                  <Skeleton className="h-8 flex-1" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const dosens = (users || []).filter((u) => u.role === "dosen");
+  const mahasiswas = (users || []).filter((u) => u.role === "mahasiswa");
+  const unconfigured = (users || []).filter((u) => !u.role);
 
   const handleTabChange = (value) => {
     setActiveTab(value);
@@ -108,13 +149,13 @@ export default function UsersPage() {
     if (activeTab === "dosen") return dosens;
     if (activeTab === "mahasiswa") return mahasiswas;
     if (activeTab === "unconfigured") return unconfigured;
-    return users;
+    return users || [];
   };
 
   const activeData = getActiveData();
-  const totalPages = Math.ceil(activeData.length / ITEMS_PER_PAGE) || 1;
+  const totalPages = Math.ceil((activeData?.length || 0) / ITEMS_PER_PAGE) || 1;
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const currentUsers = activeData.slice(
+  const currentUsers = (activeData || []).slice(
     startIndex,
     startIndex + ITEMS_PER_PAGE,
   );
@@ -223,9 +264,6 @@ export default function UsersPage() {
     }
   };
 
-  // ==========================================
-  // PERUBAHAN PADA UI/UX (FRONTEND KAKU & LEGA)
-  // ==========================================
   const UserRow = ({ u }) => {
     const Icon = roleIcon[u.role] || Users;
     return (
@@ -463,8 +501,8 @@ export default function UsersPage() {
             {/* Bagian 1: Kredensial Sistem */}
             <div className="space-y-4">
               <h4 className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest flex items-center gap-2 border-b border-border/50 pb-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary" /> Kredensial
-                Sistem
+                <div className="w-1.5 h-1.5 rounded-full bg-primary" />{" "}
+                Kredensial Sistem
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>

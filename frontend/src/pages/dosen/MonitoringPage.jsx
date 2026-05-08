@@ -30,18 +30,82 @@ import { id as localeId } from "date-fns/locale";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useEntityList } from "@/lib/hooks/useEntityList";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MonitoringPage() {
-  // ==========================================
-  // LOGIKA TETAP UTUH (TIDAK ADA YANG DIUBAH)
-  // ==========================================
-  const { data: user } = useCurrentUser();
-  const { data: mappingsAll = [] } = useEntityList("Mapping");
-  const { data: bookingsAll = [] } = useEntityList("Booking");
-  const { data: logsAll = [] } = useEntityList("Logbook");
+  const { data: user, isLoading: isUserLoading } = useCurrentUser();
+  const { data: mappingsAll = [], isLoading: isMappingsLoading } =
+    useEntityList("Mapping");
+  const { data: bookingsAll = [], isLoading: isBookingsLoading } =
+    useEntityList("Booking");
+  const { data: logsAll = [], isLoading: isLogsLoading } =
+    useEntityList("Logbook");
+
+  const isDataLoading =
+    isUserLoading || isMappingsLoading || isBookingsLoading || isLogsLoading;
 
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const ITEMS_PER_PAGE = 5;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchQuery]);
+
+  if (isDataLoading) {
+    return (
+      <div className="space-y-5 max-w-7xl mx-auto pb-10">
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5">
+          <Skeleton className="h-3 w-32 mb-1.5" />
+          <Skeleton className="h-5 w-56" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="bg-card rounded-md p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
+            >
+              <Skeleton className="h-4 w-24 mb-3" />
+              <Skeleton className="h-8 w-16" />
+            </div>
+          ))}
+        </div>
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-4 flex gap-3 mt-4">
+          <Skeleton className="h-9 flex-1" />
+          <Skeleton className="h-9 w-44" />
+        </div>
+        <div className="bg-card rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.06)] border border-border/50 overflow-hidden mt-4">
+          <div className="px-5 py-4 border-b border-border/50">
+            <Skeleton className="h-5 w-48" />
+          </div>
+          <div className="divide-y divide-border/50">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="p-5 flex flex-col sm:flex-row justify-between gap-6"
+              >
+                <div className="flex gap-4 flex-1">
+                  <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                </div>
+                <div className="w-full sm:w-1/3 p-4 space-y-3 border border-border/50 rounded">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-2 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const mappings = mappingsAll.filter((m) => m.status === "active");
   const bookings = bookingsAll;
@@ -98,13 +162,6 @@ export default function MonitoringPage() {
     return true;
   });
 
-  const ITEMS_PER_PAGE = 5;
-  const [currentPage, setCurrentPage] = useState(1);
-
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [statusFilter, searchQuery]);
-
   const sortedStudents = [...filteredStudents].sort(
     (a, b) => a.latestProgress - b.latestProgress,
   );
@@ -116,9 +173,6 @@ export default function MonitoringPage() {
     startIndex + ITEMS_PER_PAGE,
   );
 
-  // ==========================================
-  // PERUBAHAN PADA UI/UX (FRONTEND KAKU & LEGA)
-  // ==========================================
   return (
     <div className="space-y-5 max-w-7xl mx-auto pb-10">
       {/* Header Halaman */}
@@ -129,7 +183,6 @@ export default function MonitoringPage() {
         <h1 className="text-base font-semibold text-foreground">
           Monitoring Mahasiswa Bimbingan
         </h1>
-       
       </div>
 
       {/* Cards Statistik */}
@@ -178,7 +231,10 @@ export default function MonitoringPage() {
               <SelectItem value="active" className="text-sm">
                 Aktif Bimbingan
               </SelectItem>
-              <SelectItem value="inactive" className="text-sm text-destructive focus:text-destructive">
+              <SelectItem
+                value="inactive"
+                className="text-sm text-destructive focus:text-destructive"
+              >
                 Pasif (Peringatan)
               </SelectItem>
             </SelectContent>
@@ -220,7 +276,7 @@ export default function MonitoringPage() {
                     "flex flex-col sm:flex-row sm:items-center justify-between p-5 gap-6 transition-all",
                     s.isInactive
                       ? "bg-destructive/5 hover:bg-destructive/10"
-                      : "bg-background hover:bg-muted/20"
+                      : "bg-background hover:bg-muted/20",
                   )}
                 >
                   <div className="flex items-start gap-4 w-full sm:w-1/2">
